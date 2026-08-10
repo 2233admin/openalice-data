@@ -1,0 +1,15 @@
+[project]
+name = "openbb-ashare"
+version = "0.1.0"
+description = "A-share snapshot providers for the OpenBB-based quote sidecar"
+requires-python = ">=3.10,<4"
+license = {text = "AGPL-3.0-only"}
+dependencies = ["openbb-core"]
+
+[project.entry-points."openbb_provider_extension"]
+ashare = "openbb_ashare:ashare_provider"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
