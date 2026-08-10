@@ -1,0 +1,5 @@
+extend = "../../../ruff.toml"
+
+[lint.per-file-ignores]
+"tests/*.py" = ["D100", "D103", "S101"]
+"openalice_data/query.py" = ["S608"]

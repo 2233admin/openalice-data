@@ -1,14 +1,16 @@
+"""A-share provider contract tests."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
 import pytest
-
 from openbb_ashare.models.snapshot import AshareSnapshotFetcher
 
 
 @pytest.mark.asyncio
 async def test_snapshot_fetcher_normalizes_symbols_and_preserves_provenance() -> None:
+    """Normalize symbols and retain vendor/source timestamps."""
     async def source_adapter(symbols: list[str]) -> list[dict]:
         assert symbols == ["000001.SZ", "600000.SH"]
         return [

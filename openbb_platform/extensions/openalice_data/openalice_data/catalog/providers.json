@@ -1,0 +1,50 @@
+[
+  {
+    "provider_id": "openbb",
+    "display_name": "OpenBB providers",
+    "software_license": "AGPL-3.0-only",
+    "data_terms": "Each installed upstream provider retains its own data terms.",
+    "authentication": "Provider-specific environment or local settings",
+    "commercial_use": "Varies by upstream provider; review required",
+    "source_url": "https://github.com/OpenBB-finance/OpenBB",
+    "attribution": "OpenBB and the selected upstream data provider",
+    "optional": false,
+    "review_status": "required"
+  },
+  {
+    "provider_id": "axdata",
+    "display_name": "AxData",
+    "software_license": "See upstream project",
+    "data_terms": "The upstream project states that public-interface data has non-commercial-use restrictions.",
+    "authentication": "Provider-specific local configuration",
+    "commercial_use": "Restricted; obtain authorization from the data source",
+    "source_url": "https://electkismet.github.io/AxData/index.html",
+    "attribution": "AxData and its underlying data sources",
+    "optional": true,
+    "review_status": "required"
+  },
+  {
+    "provider_id": "ashare",
+    "display_name": "OpenAlice A-share provider",
+    "software_license": "AGPL-3.0-only",
+    "data_terms": "Depends on the selected adapter and underlying source.",
+    "authentication": "Environment or local settings when required",
+    "commercial_use": "Varies by adapter; review required",
+    "source_url": "https://git.xart.top:8418/Curry/openbb-ashare",
+    "attribution": "OpenAlice Data and the selected A-share source",
+    "optional": true,
+    "review_status": "required"
+  },
+  {
+    "provider_id": "katana_parquet",
+    "display_name": "k-atana PIT Parquet",
+    "software_license": "Data contract only; no k-atana source is copied",
+    "data_terms": "Defined by the registered dataset owner.",
+    "authentication": "Filesystem or read-only object-store access",
+    "commercial_use": "Defined by the dataset owner",
+    "source_url": "https://git.xart.top:8418/chen-qianyu/quant--k-atana",
+    "attribution": "k-atana dataset lineage",
+    "optional": true,
+    "review_status": "required"
+  }
+]

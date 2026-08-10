@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "openalice-data"
+version = "0.1.0"
+description = "Read-only multi-market dataset catalog and PIT query extension for OpenBB"
+authors = ["OpenAlice Data contributors"]
+license = "AGPL-3.0-only"
+readme = "README.md"
+packages = [{ include = "openalice_data" }]
+include = ["openalice_data/catalog/*.json"]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.14"
+openbb-core = "^1.6.13"
+fastapi = ">=0.115"
+pydantic = ">=2.10"
+pyarrow = ">=14"
+duckdb = ">=1.0,<2"
+pytz = ">=2024.1"
+tzdata = { version = ">=2024.1", markers = "sys_platform == 'win32'" }
+
+[tool.poetry.plugins."openbb_core_extension"]
+data = "openalice_data.router:router"
+
+[build-system]
+requires = ["poetry-core>=1.8"]
+build-backend = "poetry.core.masonry.api"

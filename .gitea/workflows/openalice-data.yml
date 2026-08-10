@@ -1,0 +1,42 @@
+name: OpenAlice Data compatibility
+
+on:
+  push:
+    branches: [main, "sync/**"]
+  pull_request:
+
+jobs:
+  extension-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.11"
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: ubuntu-latest
+            python: "3.13"
+          - os: windows-latest
+            python: "3.12"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install extension and test dependencies
+        run: >-
+          python -m pip install
+          -e openbb_platform/core
+          -e openbb_platform/extensions/openalice_data
+          -e openbb_platform/providers/ashare
+          pytest httpx
+      - name: Run OpenAlice Data contract tests
+        run: >-
+          python -m pytest
+          openbb_platform/extensions/openalice_data/tests
+          openbb_platform/providers/ashare/tests
+          -q
+      - name: Verify extension package metadata
+        run: python -m pip check

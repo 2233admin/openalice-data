@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from openbb_core.provider.abstract.fetcher import Fetcher
 from openbb_core.provider.standard_models.equity_quote import (
@@ -44,6 +45,7 @@ class AshareSnapshotQueryParams(EquityQuoteQueryParams):
     @field_validator("symbol", mode="before")
     @classmethod
     def normalize_symbols(cls, value: str) -> str:
+        """Normalize every comma-separated A-share symbol."""
         return ",".join(normalize_symbol(item) for item in value.split(","))
 
 
@@ -68,6 +70,7 @@ class AshareSnapshotFetcher(
 
     @staticmethod
     def transform_query(params: dict[str, Any]) -> AshareSnapshotQueryParams:
+        """Validate and normalize OpenBB query parameters."""
         return AshareSnapshotQueryParams(**params)
 
     @staticmethod
@@ -76,6 +79,7 @@ class AshareSnapshotFetcher(
         credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
+        """Call the injected source adapter without handling credentials."""
         adapter: SourceAdapter | None = kwargs.get("source_adapter")
         if adapter is None:
             raise RuntimeError(f"source adapter is not configured: {query.source}")
@@ -90,6 +94,7 @@ class AshareSnapshotFetcher(
         data: list[dict[str, Any]],
         **kwargs: Any,
     ) -> list[AshareSnapshotData]:
+        """Normalize source rows while preserving observation provenance."""
         received_at = kwargs.get("received_at") or datetime.now(timezone.utc)
         rows: list[AshareSnapshotData] = []
         for raw in data:

@@ -1,0 +1,10 @@
+{
+  "datasets": {
+    "katana.ashare.pit.daily": {
+      "type": "parquet",
+      "versions": {
+        "2026-08-10": "D:/data/k-atana/ashare/pit/daily/2026-08-10.parquet"
+      }
+    }
+  }
+}

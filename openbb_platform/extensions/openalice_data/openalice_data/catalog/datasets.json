@@ -1,0 +1,135 @@
+[
+  {
+    "dataset_id": "openalice.cn.equity.snapshot",
+    "name": "China A-share market snapshot",
+    "name_zh": "A 股全市场快照",
+    "market": "CN",
+    "asset_type": "equity",
+    "provider": "ashare",
+    "access_mode": "source_request",
+    "description": "Normalized live snapshot through an installed A-share provider.",
+    "description_zh": "通过已安装 A 股 Provider 请求标准化实时快照。",
+    "parameters": [{"name": "symbol", "type": "string", "description_zh": "证券代码"}],
+    "fields": [
+      {"name": "symbol", "type": "string"},
+      {"name": "last_price", "type": "number"},
+      {"name": "vendor_time", "type": "datetime"},
+      {"name": "received_at", "type": "datetime"},
+      {"name": "source", "type": "string"}
+    ],
+    "freshness": "provider reported",
+    "coverage": "request reconciled by normalized symbol",
+    "license_id": "provider-terms",
+    "query_entry": "data.equity.quote"
+  },
+  {
+    "dataset_id": "openbb.us.equity.history",
+    "name": "US equity historical prices",
+    "name_zh": "美股历史行情",
+    "market": "US",
+    "asset_type": "equity",
+    "provider": "openbb",
+    "access_mode": "source_request",
+    "description": "Existing OpenBB equity historical interface with selectable provider.",
+    "description_zh": "复用 OpenBB 原有美股历史行情接口并允许显式选源。",
+    "parameters": [
+      {"name": "symbol", "type": "string"},
+      {"name": "provider", "type": "string", "nullable": true}
+    ],
+    "fields": [
+      {"name": "date", "type": "date"},
+      {"name": "open", "type": "number"},
+      {"name": "high", "type": "number"},
+      {"name": "low", "type": "number"},
+      {"name": "close", "type": "number"},
+      {"name": "volume", "type": "number"}
+    ],
+    "freshness": "provider reported",
+    "coverage": "provider dependent",
+    "license_id": "provider-terms",
+    "query_entry": "data.equity.history"
+  },
+  {
+    "dataset_id": "openbb.crypto.ohlcv",
+    "name": "Cryptocurrency OHLCV",
+    "name_zh": "数字货币 K 线",
+    "market": "GLOBAL",
+    "asset_type": "crypto",
+    "provider": "openbb",
+    "access_mode": "source_request",
+    "description": "Existing OpenBB crypto historical interface.",
+    "description_zh": "复用 OpenBB 数字货币历史行情接口。",
+    "parameters": [{"name": "symbol", "type": "string"}],
+    "fields": [
+      {"name": "date", "type": "datetime"},
+      {"name": "open", "type": "number"},
+      {"name": "high", "type": "number"},
+      {"name": "low", "type": "number"},
+      {"name": "close", "type": "number"},
+      {"name": "volume", "type": "number"}
+    ],
+    "freshness": "provider reported",
+    "coverage": "provider dependent",
+    "license_id": "provider-terms",
+    "query_entry": "data.crypto.history"
+  },
+  {
+    "dataset_id": "openalice.cn.futures.ohlcv",
+    "name": "China futures OHLCV",
+    "name_zh": "国内期货 K 线",
+    "market": "CN",
+    "asset_type": "futures",
+    "provider": "axdata",
+    "access_mode": "source_request",
+    "description": "Optional AxData-backed source request; installation and data authorization are separate.",
+    "description_zh": "可选 AxData 数据源；安装连接能力不等于获得数据授权。",
+    "parameters": [
+      {"name": "symbol", "type": "string"},
+      {"name": "interval", "type": "string"}
+    ],
+    "fields": [
+      {"name": "date", "type": "datetime"},
+      {"name": "open", "type": "number"},
+      {"name": "high", "type": "number"},
+      {"name": "low", "type": "number"},
+      {"name": "close", "type": "number"},
+      {"name": "volume", "type": "number"}
+    ],
+    "freshness": "provider reported",
+    "coverage": "provider dependent",
+    "license_id": "axdata-upstream-terms",
+    "query_entry": "data.futures.history"
+  },
+  {
+    "dataset_id": "katana.ashare.pit.daily",
+    "name": "k-atana A-share PIT daily bars",
+    "name_zh": "k-atana A 股 PIT 日线",
+    "market": "CN",
+    "asset_type": "equity",
+    "provider": "katana_parquet",
+    "access_mode": "dataset_query",
+    "description": "Read-only registration of PIT Parquet produced by k-atana.",
+    "description_zh": "只读注册由 k-atana 生产的 PIT Parquet，Hub 不生产或补写可用时间。",
+    "parameters": [
+      {"name": "version", "type": "string"},
+      {"name": "as_of", "type": "datetime", "description_zh": "查询截止可用时间"}
+    ],
+    "fields": [
+      {"name": "symbol", "type": "string"},
+      {"name": "event_time", "type": "datetime"},
+      {"name": "available_at", "type": "datetime"},
+      {"name": "source_updated_at", "type": "datetime"}
+    ],
+    "freshness": "manifest supplied",
+    "coverage": "manifest supplied and query reported",
+    "license_id": "k-atana-data-contract",
+    "query_entry": "data.catalog.query_dataset",
+    "pit": true,
+    "versions": ["example-v1"],
+    "event_time_field": "event_time",
+    "available_at_field": "available_at",
+    "source_updated_at_field": "source_updated_at",
+    "lineage": "k-atana:backend/app/research/ashare_data_contract.py",
+    "quality_status": "requires runtime manifest"
+  }
+]

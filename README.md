@@ -1,10 +1,10 @@
-# 中国市场开放数据平台（暂定名）
+# OpenAlice Data Hub（临时内部名）
 
-本项目基于 OpenBB 开源代码构建，是面向中国市场的多资产金融数据、研究与应用平台。产品以中文为默认使用语言和部署体验，覆盖中国股票、数字货币、国内期货，并保留 OpenBB 原有美国市场数据接口；港股及其他中国相关市场通过可插拔 Provider 按项目需求扩展。
+本项目是基于完整 OpenBB Fork 的公开开源、只读、多市场数据 Hub。它统一注册、发现、查询和解释外部 Provider 与自定义/PIT 数据，优先服务 Python、REST 和 Agent 调用；它不提供账户、持仓、交易执行，不接管采集任务，也不生产或补写 PIT 时间列。
 
-当前处于基础能力建设阶段。首个实现是 A 股快照 Provider，它只是中国股票市场模块的一部分，不代表项目整体边界。完整产品范围和兼容原则见 [产品范围](docs/PRODUCT_SCOPE.zh-CN.md)。
+仓库保留 OpenBB 的 `OBBject`、标准模型、全球 Provider 和 MCP/REST 能力。自有功能放在 `openalice_data` 扩展与独立 Provider 中，避免无必要修改 OpenBB Core。产品边界见 [产品范围与数据契约](docs/PRODUCT_SCOPE.zh-CN.md)，扩展入口见 [`openalice-data`](openbb_platform/extensions/openalice_data/README.md)。
 
-本仓库保留上游 OpenBB 的 AGPL-3.0 许可证及归属信息。`upstream` 用于跟踪 OpenBB 更新，自有功能在独立 Provider、扩展和本地化层演进，避免无必要地修改核心。
+本仓库保留上游 OpenBB 的 AGPL-3.0 许可证及归属信息。只读 `upstream` 跟踪 OpenBB 更新；同步方法和当前基线见 [UPSTREAM.md](UPSTREAM.md)。
 
 ---
 
