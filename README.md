@@ -1,3 +1,15 @@
+# 中国市场开放数据平台（暂定名）
+
+本项目基于 OpenBB 开源代码构建，是面向中国市场的多资产金融数据、研究与应用平台。产品以中文为默认使用语言和部署体验，覆盖中国股票、数字货币、国内期货，并保留 OpenBB 原有美国市场数据接口；港股及其他中国相关市场通过可插拔 Provider 按项目需求扩展。
+
+当前处于基础能力建设阶段。首个实现是 A 股快照 Provider，它只是中国股票市场模块的一部分，不代表项目整体边界。完整产品范围和兼容原则见 [产品范围](docs/PRODUCT_SCOPE.zh-CN.md)。
+
+本仓库保留上游 OpenBB 的 AGPL-3.0 许可证及归属信息。`upstream` 用于跟踪 OpenBB 更新，自有功能在独立 Provider、扩展和本地化层演进，避免无必要地修改核心。
+
+---
+
+## 上游 OpenBB 说明
+
 <br />
 <img src="https://github.com/OpenBB-finance/OpenBB/blob/develop/images/odp-light.svg?raw=true#gh-light-mode-only" alt="Open Data Platform by OpenBB logo" width="600">
 <img src="https://github.com/OpenBB-finance/OpenBB/blob/develop/images/odp-dark.svg?raw=true#gh-dark-mode-only" alt="Open Data Platform by OpenBB logo" width="600">
