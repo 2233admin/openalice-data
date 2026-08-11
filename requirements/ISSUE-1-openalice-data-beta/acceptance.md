@@ -33,5 +33,5 @@
 
 - [x] Git diff 不包含既存的 `docs/OPENALICE_DATA_NEXT_PHASE_DECISION.md` 与 `docs/research/`。
 - [x] 许可证、OpenBB 上游归属和免责声明保留。
-- [ ] 提交已推送至 `2233admin/openalice-data`。
+- [x] 提交已推送至 `2233admin/openalice-data`。
 - [ ] GitHub Beta 发布说明包含能力、启动方法和已知限制。
