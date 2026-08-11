@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "openalice-data"
-version = "0.1.0"
+version = "0.1.0b1"
 description = "Read-only multi-market dataset catalog and PIT query extension for OpenBB"
 authors = ["OpenAlice Data contributors"]
 license = "AGPL-3.0-only"
 readme = "README.md"
 packages = [{ include = "openalice_data" }]
-include = ["openalice_data/catalog/*.json"]
+include = ["openalice_data/catalog/*.json", "openalice_data/web/**"]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.14"

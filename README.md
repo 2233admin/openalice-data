@@ -1,225 +1,117 @@
-# OpenAlice Data Hub（临时内部名）
+# OpenAlice Data
 
-本项目是基于完整 OpenBB Fork 的公开开源、只读、多市场数据 Hub。它统一注册、发现、查询和解释外部 Provider 与自定义/PIT 数据，优先服务 Python、REST 和 Agent 调用；它不提供账户、持仓、交易执行，不接管采集任务，也不生产或补写 PIT 时间列。
+**基于 OpenBB 的中文、多市场、易部署开源数据平台。**
 
-仓库保留 OpenBB 的 `OBBject`、标准模型、全球 Provider 和 MCP/REST 能力。自有功能放在 `openalice_data` 扩展与独立 Provider 中，避免无必要修改 OpenBB Core。产品边界见 [产品范围与数据契约](docs/PRODUCT_SCOPE.zh-CN.md)，扩展入口见 [`openalice-data`](openbb_platform/extensions/openalice_data/README.md)。
+OpenAlice Data 保留 OpenBB 的标准模型、全球 Provider、REST 与 MCP 能力，补上中国市场习惯、双语数据目录、自定义市场入口和一条命令部署。首个 Beta 的目标很直接：只装 Docker，就能打开中文数据屏并拿到第一条真实数据。
 
-本仓库保留上游 OpenBB 的 AGPL-3.0 许可证及归属信息。只读 `upstream` 跟踪 OpenBB 更新；同步方法和当前基线见 [UPSTREAM.md](UPSTREAM.md)。
+## 一条命令启动
 
----
+前置条件只有 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 或 Docker Engine + Compose。
 
-## 上游 OpenBB 说明
-
-<br />
-<img src="https://github.com/OpenBB-finance/OpenBB/blob/develop/images/odp-light.svg?raw=true#gh-light-mode-only" alt="Open Data Platform by OpenBB logo" width="600">
-<img src="https://github.com/OpenBB-finance/OpenBB/blob/develop/images/odp-dark.svg?raw=true#gh-dark-mode-only" alt="Open Data Platform by OpenBB logo" width="600">
-<br />
-<br />
-
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/openbb_finance.svg?style=social&label=Follow%20%40openbb_finance)](https://x.com/openbb_finance)
-[![Discord Shield](https://img.shields.io/discord/831165782750789672)](https://discord.com/invite/xPHTuHCmuV)
-[![Open in Dev Containers](https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/OpenBB-finance/OpenBB)
-<a href="https://codespaces.new/OpenBB-finance/OpenBB">
-  <img src="https://github.com/codespaces/badge.svg" height="20" />
-</a>
-<a target="_blank" href="https://colab.research.google.com/github/OpenBB-finance/OpenBB/blob/develop/examples/googleColab.ipynb">
-  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a>
-[![PyPI](https://img.shields.io/pypi/v/openbb?color=blue&label=PyPI%20Package)](https://pypi.org/project/openbb/)
-
-Open Data Platform by OpenBB (ODP) is the open-source toolset that helps data engineers integrate proprietary, licensed, and public data sources into downstream applications like AI copilots and research dashboards.
-
-ODP operates as the "connect once, consume everywhere" infrastructure layer that consolidates and exposes data to multiple surfaces at once: Python environments for quants, OpenBB Workspace and Excel for analysts, MCP servers for AI agents, and REST APIs for other applications.
-
-<a href="https://pro.openbb.co">
-  <div align="center">
-  <img src="https://openbb-cms.directus.app/assets/70b971ef-7a7e-486e-b5ae-1cc602f2162c.png" alt="Logo" width="1000">
-  </div>
-</a>
-
-Get started with: `pip install openbb`
-
-```python
-from openbb import obb
-output = obb.equity.price.historical("AAPL")
-df = output.to_dataframe()
+```bash
+git clone https://github.com/2233admin/openalice-data.git
+cd openalice-data
+docker compose up --build -d
 ```
 
-Data integrations available can be found here: <https://docs.openbb.co/python/reference>
+等待容器健康后打开：
 
----
+- 中文数据屏：<http://localhost:6900/api/v1/data/>
+- OpenBB API 文档：<http://localhost:6900/docs>
+- 健康检查：<http://localhost:6900/api/v1/data/health>
 
-## OpenBB Workspace
+数据屏可以搜索内置数据目录、检查数据源状态、查看数据集字段，并通过 OpenBB yfinance Provider 请求一段真实历史行情。
 
-While the Open Data Platform provides the open-source data integration foundation, **OpenBB Workspace** offers the enterprise UI for analysts to visualize datasets and leverage AI agents. The platform's "connect once, consume everywhere" architecture enables seamless integration between the two.
+停止服务：
 
-You can find OpenBB Workspace at <https://pro.openbb.co>.
-<a href="https://pro.openbb.co">
-  <div align="center">
-  <img src="https://openbb-cms.directus.app/assets/f69b6aaf-0821-4bc8-a43c-715e03a924ef.png" alt="Logo" width="1000">
-  </div>
-</a>
-
-Data integration:
-
-- You can learn more about adding data to the OpenBB workspace from the [docs](https://docs.openbb.co/workspace) or [this open source repository](https://github.com/OpenBB-finance/backends-for-openbb).
-
-AI Agents integration:
-
-- You can learn more about adding AI agents to the OpenBB workspace from [this open source repository](https://github.com/OpenBB-finance/agents-for-openbb).
-
-### Integrating Open Data Platform to the OpenBB Workspace
-
-Connect this library to the OpenBB Workspace with a few simple commands, in a Python (3.9.21 - 3.12) environment.
-
-#### Run an ODP backend
-
-- Install the packages.
-
-```sh
-pip install "openbb[all]"
+```bash
+docker compose down
 ```
 
-- Start the API server over localhost.
+修改端口时，复制 `.env.example` 为 `.env` 并调整 `OPENALICE_PORT`。
 
-```sh
-openbb-api
+## Beta 能做什么
+
+- 中文优先的数据屏、加载状态和错误诊断。
+- 统一搜索 A 股、美股、数字货币、期货和本地 PIT 数据集。
+- 通过 OpenBB Provider 使用标准化市场数据。
+- 只读挂载 Parquet/DuckDB 研究数据，保留版本、PIT 和 lineage。
+- 同一套能力暴露给 Python、REST、MCP 和 Web。
+- 数据源状态不泄露凭据。
+
+## 接入自定义市场
+
+OpenAlice Data 提供两条扩展路径，均不要求修改 OpenBB Core。
+
+### 1. OpenBB Provider：实时或按需数据
+
+适合交易所行情、公开网站接口和需要参数/字段转换的自定义市场。仓库内的最小 A 股 Provider 可作为起点：
+
+- Provider 包：`openbb_platform/providers/ashare/`
+- 标准化示例：`openbb_platform/providers/ashare/openbb_ashare/models/snapshot.py`
+- OpenBB Provider 接口：沿用上游 `openbb_core.provider` 契约
+
+Provider 安装后可复用 OpenBB 的标准模型、Python、REST 和 Agent 接口。
+
+### 2. 只读数据集：版本化研究数据
+
+适合已有 Parquet 或 DuckDB 数据。复制示例配置：
+
+```bash
+cp data/sources.example.json data/sources.json
 ```
 
-This will launch a FastAPI server, via Uvicorn, at `127.0.0.1:6900`.
+然后在 `.env` 中启用：
 
-You can check that it works by going to <http://127.0.0.1:6900>.
+```dotenv
+OPENALICE_DATA_SOURCES=/data/sources.json
+```
 
-#### Integrate the ODP Backend to OpenBB Workspace
+把对应数据文件放进 `data/` 后重启：
 
-Sign-in to the [OpenBB Workspace](https://pro.openbb.co/), and follow the following steps:
+```bash
+docker compose up -d
+```
 
-![CleanShot 2025-05-17 at 09 51 56@2x](https://github.com/user-attachments/assets/75cffb4a-5e95-470a-b9d0-6ffd4067e069)
+PIT 数据必须显式提供版本与 `as_of`；Hub 不写入数据、不补造时间戳。
 
-1. Go to the "Apps" tab
-2. Click on "Connect backend"
-3. Fill in the form with:
-   Name: Open Data Platform
-   URL: <http://127.0.0.1:6900>
-4. Click on "Test". You should get a "Test successful" with the number of apps found.
-5. Click on "Add".
+## 本地开发
 
-That's it.
+运行 OpenAlice Data 契约测试：
 
----
+```bash
+uv run --python 3.12 \
+  --with-editable openbb_platform/core \
+  --with-editable openbb_platform/extensions/openalice_data \
+  --with pytest --with httpx2 \
+  python -m pytest openbb_platform/extensions/openalice_data/tests -q
+```
 
-<!-- TABLE OF CONTENTS -->
-<details closed="closed">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
-  <ol>
-    <li><a href="#1-installation">Installation</a></li>
-    <li><a href="#2-contributing">Contributing</a></li>
-    <li><a href="#3-license">License</a></li>
-    <li><a href="#4-disclaimer">Disclaimer</a></li>
-    <li><a href="#5-contacts">Contacts</a></li>
-    <li><a href="#6-star-history">Star History</a></li>
-    <li><a href="#7-contributors">Contributors</a></li>
-  </ol>
-</details>
+联网验证 OpenBB yfinance Provider：
 
-## 1. Installation
+```text
+GET /api/v1/equity/price/historical
+    ?symbol=AAPL
+    &provider=yfinance
+    &start_date=2024-01-02
+    &end_date=2024-01-05
+```
 
-The ODP Python Package can be installed from [PyPI package](https://pypi.org/project/openbb/) by running `pip install openbb`
+## Beta 已知限制
 
-or by cloning the repository directly with `git clone https://github.com/OpenBB-finance/OpenBB.git`.
+- 当前数据屏是最小单页，不包含账户、权限或在线凭据保存。
+- 自定义 Provider 仍需编写 Python 适配代码；后续版本会提供脚手架向导。
+- 本项目不负责采集调度，不提供交易、持仓或下单功能。
+- 第三方数据的使用权不随开源代码自动获得，使用者需遵守各数据源条款。
 
-Please find more about the installation process, in the [OpenBB Documentation](https://docs.openbb.co/python/installation).
+## OpenBB 上游与许可证
 
-### ODP CLI installation
+本仓库是完整 OpenBB Fork。自有能力集中在 `openalice_data` 扩展与独立 Provider，尽量不修改 OpenBB Core；上游同步策略见 [UPSTREAM.md](UPSTREAM.md)。
 
-The ODP CLI is a command-line interface that allows you to access the ODP directly from your command line.
+仓库保留 OpenBB 的 AGPL-3.0 许可证、版权与第三方归属信息。OpenAlice Data 与 OpenBB 官方没有赞助、背书或隶属关系；OpenBB 名称仅用于说明兼容基础。
 
-It can be installed by running `pip install openbb-cli`
+使用前请阅读完整的 [免责声明](DISCLAIMER.md)。
 
-or by cloning the repository directly with  `git clone https://github.com/OpenBB-finance/OpenBB.git`.
-
-Please find more about the installation process in the [OpenBB Documentation](https://docs.openbb.co/cli/installation).
-
-## 2. Contributing
-
-There are three main ways of contributing to this project. (Hopefully you have starred the project by now ⭐️)
-
-### Become a Contributor
-
-- More information on our [Developer Documentation](https://docs.openbb.co/python/developer).
-
-### Create a GitHub ticket
-
-Before creating a ticket make sure the one you are creating doesn't exist already [among the existing issues](https://github.com/OpenBB-finance/OpenBB/issues)
-
-- [Report bug](https://github.com/OpenBB-finance/OpenBB/issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBug%5D)
-- [Suggest improvement](https://github.com/OpenBB-finance/OpenBB/issues/new?assignees=&labels=enhancement&template=enhancement.md&title=%5BIMPROVE%5D)
-- [Request a feature](https://github.com/OpenBB-finance/OpenBB/issues/new?assignees=&labels=new+feature&template=feature_request.md&title=%5BFR%5D)
-
-### Provide feedback
-
-We are most active on [our Discord](https://openbb.co/discord), but feel free to reach out to us in any of [our social media](https://openbb.co/links) for feedback.
-
-## 3. License
-
-Distributed under the AGPLv3 License. See
-[LICENSE](https://github.com/OpenBB-finance/OpenBB/blob/main/LICENSE) for more information.
-
-## 4. Disclaimer
-
-Trading in financial instruments involves high risks including the risk of losing some, or all, of your investment
-amount, and may not be suitable for all investors.
-
-Before deciding to trade in a financial instrument you should be fully informed of the risks and costs associated with trading the financial markets, carefully consider your investment objectives, level of experience, and risk appetite, and seek professional advice where needed.
-
-The data contained in the Open Data Platform is not necessarily accurate.
-
-OpenBB and any provider of the data contained in this website will not accept liability for any loss or damage as a result of your trading, or your reliance on the information displayed.
-
-All names, logos, and brands of third parties that may be referenced in our sites, products or documentation are trademarks of their respective owners. Unless otherwise specified, OpenBB and its products and services are not endorsed by, sponsored by, or affiliated with these third parties.
-
-Our use of these names, logos, and brands is for identification purposes only, and does not imply any such endorsement, sponsorship, or affiliation.
-
-## 5. Contacts
-
-If you have any questions about the platform or anything OpenBB, feel free to email us at `support@openbb.co`
-
-If you want to say hi, or are interested in partnering with us, feel free to reach us at `hello@openbb.co`
-
-Any of our social media platforms: [openbb.co/links](https://openbb.co/links)
-
-## 6. Star History
-
-This is a proxy of our growth and that we are just getting started.
-
-But for more metrics important to us check [openbb.co/open](https://openbb.co/open).
-
-[![Star History Chart](https://api.star-history.com/svg?repos=openbb-finance/OpenBB&type=Date&theme=dark)](https://api.star-history.com/svg?repos=openbb-finance/OpenBB&type=Date&theme=dark)
-
-## 7. Contributors
-
-OpenBB wouldn't be OpenBB without you. If we are going to disrupt financial industry, every contribution counts. Thank you for being part of this journey.
-
-<a href="https://github.com/OpenBB-finance/OpenBB/graphs/contributors">
-   <img src="https://contributors-img.web.app/image?repo=OpenBB-finance/OpenBB" width="800"/>
-</a>
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-
-[contributors-shield]: https://img.shields.io/github/contributors/OpenBB-finance/OpenBB.svg?style=for-the-badge
-[contributors-url]: https://github.com/OpenBB-finance/OpenBB/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/OpenBB-finance/OpenBB.svg?style=for-the-badge
-[forks-url]: https://github.com/OpenBB-finance/OpenBB/network/members
-[stars-shield]: https://img.shields.io/github/stars/OpenBB-finance/OpenBB.svg?style=for-the-badge
-[stars-url]: https://github.com/OpenBB-finance/OpenBB/stargazers
-[issues-shield]: https://img.shields.io/github/issues/OpenBB-finance/OpenBB.svg?style=for-the-badge&color=blue
-[issues-url]: https://github.com/OpenBB-finance/OpenBB/issues
-[bugs-open-shield]: https://img.shields.io/github/issues/OpenBB-finance/OpenBB/bug.svg?style=for-the-badge&color=yellow
-[bugs-open-url]: https://github.com/OpenBB-finance/OpenBB/issues?q=is%3Aissue+label%3Abug+is%3Aopen
-[bugs-closed-shield]: https://img.shields.io/github/issues-closed/OpenBB-finance/OpenBB/bug.svg?style=for-the-badge&color=success
-[bugs-closed-url]: https://github.com/OpenBB-finance/OpenBB/issues?q=is%3Aissue+label%3Abug+is%3Aclosed
-[license-shield]: https://img.shields.io/github/license/OpenBB-finance/OpenBB.svg?style=for-the-badge
-[license-url]: https://github.com/OpenBB-finance/OpenBB/blob/main/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/DidierRLopes
+- 产品边界：[docs/PRODUCT_SCOPE.zh-CN.md](docs/PRODUCT_SCOPE.zh-CN.md)
+- 架构决策：[docs/OPENALICE_DATA_DECISION.md](docs/OPENALICE_DATA_DECISION.md)
+- Provider 合规：[docs/PROVIDER_COMPLIANCE.md](docs/PROVIDER_COMPLIANCE.md)

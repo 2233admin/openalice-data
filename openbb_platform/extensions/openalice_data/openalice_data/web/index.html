@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="OpenAlice Data：基于 OpenBB 的中文、多市场、易部署开源数据平台。"
+    />
+    <title>OpenAlice Data · 数据屏</title>
+    <link rel="stylesheet" href="assets/dashboard.css" />
+    <script defer src="assets/dashboard.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="OpenAlice Data 首页">
+          <span class="brand-mark" aria-hidden="true">OA</span>
+          <span>
+            <strong>OpenAlice Data</strong>
+            <small>基于 OpenBB</small>
+          </span>
+        </a>
+        <div class="service-pill" id="service-pill" aria-live="polite">
+          <span class="status-dot"></span>
+          <span id="service-label">正在连接服务</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <p class="eyebrow">OPEN SOURCE · BETA 1</p>
+            <h1 id="hero-title">市场数据，<br /><em>接得进，马上用。</em></h1>
+            <p class="hero-summary">
+              一个中文优先的数据入口：复用 OpenBB 的标准模型与全球 Provider，
+              同时让自定义市场、本地数据和 Agent 使用同一套契约。
+            </p>
+            <div class="hero-actions">
+              <button class="button button-primary" id="browse-data" type="button">
+                浏览数据目录
+              </button>
+              <button class="button button-secondary" id="verify-quote" type="button">
+                验证真实行情
+              </button>
+            </div>
+          </div>
+          <div class="hero-console" aria-label="启动示例">
+            <div class="console-topline">
+              <span>最快启动</span>
+              <span class="console-light"></span>
+            </div>
+            <code>docker compose up --build -d</code>
+            <div class="console-result">
+              <span class="console-check">✓</span>
+              <span>一个服务 · 一个端口 · 中文可诊断</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="metrics" aria-label="数据概览">
+          <article class="metric-card">
+            <span class="metric-label">数据集</span>
+            <strong id="metric-datasets">—</strong>
+            <small>统一目录</small>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">覆盖市场</span>
+            <strong id="metric-markets">—</strong>
+            <small>可继续扩展</small>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">数据源</span>
+            <strong id="metric-sources">—</strong>
+            <small>状态透明</small>
+          </article>
+          <article class="metric-card metric-card-accent">
+            <span class="metric-label">访问方式</span>
+            <strong>4</strong>
+            <small>Python · REST · MCP · Web</small>
+          </article>
+        </section>
+
+        <section class="section" id="catalog-section" aria-labelledby="catalog-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">DATA CATALOG</p>
+              <h2 id="catalog-title">先找到数据，再决定怎么用</h2>
+            </div>
+            <label class="search-box">
+              <span class="sr-only">搜索数据</span>
+              <span aria-hidden="true">⌕</span>
+              <input
+                id="catalog-search"
+                type="search"
+                placeholder="搜索数据、市场或字段，例如：A股、PIT、close"
+                autocomplete="off"
+              />
+            </label>
+          </div>
+
+          <div class="catalog-layout">
+            <div class="panel catalog-panel">
+              <div class="panel-caption">
+                <span>数据目录</span>
+                <span id="catalog-count">载入中</span>
+              </div>
+              <div id="catalog-list" class="catalog-list" aria-live="polite">
+                <div class="loading-card">正在读取数据目录…</div>
+              </div>
+            </div>
+
+            <aside class="panel detail-panel" id="dataset-detail" aria-live="polite">
+              <div class="detail-placeholder">
+                <span class="detail-glyph" aria-hidden="true">↗</span>
+                <h3>选择一个数据集</h3>
+                <p>查看字段、来源、覆盖范围、使用方式和 PIT 约束。</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="section two-column" id="quote-section">
+          <article class="panel live-panel">
+            <div class="panel-title-row">
+              <div>
+                <p class="eyebrow">LIVE CHECK</p>
+                <h2>验证真实行情</h2>
+              </div>
+              <span class="provider-badge">OpenBB · yfinance</span>
+            </div>
+            <p class="panel-intro">
+              直接经过 OpenBB 标准模型请求真实历史行情。默认区间固定，便于复现。
+            </p>
+            <form id="quote-form" class="quote-form">
+              <label>
+                <span>证券代码</span>
+                <input id="quote-symbol" name="symbol" value="AAPL" required />
+              </label>
+              <label>
+                <span>开始日期</span>
+                <input id="quote-start" name="start_date" type="date" value="2024-01-02" required />
+              </label>
+              <label>
+                <span>结束日期</span>
+                <input id="quote-end" name="end_date" type="date" value="2024-01-08" required />
+              </label>
+              <button class="button button-primary" type="submit">请求真实数据</button>
+            </form>
+            <div id="quote-result" class="quote-result" aria-live="polite">
+              <div class="empty-state">点击“请求真实数据”完成首次数据验证。</div>
+            </div>
+          </article>
+
+          <article class="panel source-panel">
+            <div class="panel-title-row">
+              <div>
+                <p class="eyebrow">SOURCE HEALTH</p>
+                <h2>数据源状态</h2>
+              </div>
+              <button class="text-button" id="refresh-sources" type="button">刷新</button>
+            </div>
+            <p class="panel-intro">不暴露凭据，只告诉你哪里可用、哪里还差配置。</p>
+            <div id="source-list" class="source-list" aria-live="polite">
+              <div class="loading-card">正在检查数据源…</div>
+            </div>
+          </article>
+        </section>
+
+        <section class="section connector" id="connector-section" aria-labelledby="connector-title">
+          <div class="connector-copy">
+            <p class="eyebrow">BRING YOUR MARKET</p>
+            <h2 id="connector-title">接入自定义市场</h2>
+            <p>
+              不改 OpenBB Core。实时或按需数据走 Provider；版本化研究数据走只读数据集。
+              两条路径都进入同一个 Catalog，并自动获得 REST、MCP 和中文说明。
+            </p>
+          </div>
+          <div class="connector-options">
+            <article>
+              <span class="option-number">01</span>
+              <h3>OpenBB Provider</h3>
+              <p>适合行情接口、公开数据源和需要参数转换的自定义市场。</p>
+              <a
+                href="https://github.com/2233admin/openalice-data/tree/main/openbb_platform/providers/ashare"
+                target="_blank"
+                rel="noreferrer"
+              >查看 Provider 示例 <span>↗</span></a>
+            </article>
+            <article>
+              <span class="option-number">02</span>
+              <h3>只读数据集</h3>
+              <p>把 Parquet 或 DuckDB 按版本挂进来，保留 PIT、来源和质量信息。</p>
+              <button class="copy-link" id="copy-config" type="button">复制配置模板 <span>＋</span></button>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>OpenAlice Data Beta 1</span>
+        <span>基于 OpenBB · AGPL-3.0</span>
+      </footer>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

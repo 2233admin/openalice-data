@@ -1,0 +1,50 @@
+name: OpenAlice Data Beta
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Python ${{ matrix.python-version }} contracts
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Run OpenAlice Data contracts
+        run: >-
+          uv run --python ${{ matrix.python-version }}
+          --with-editable openbb_platform/core
+          --with-editable openbb_platform/extensions/openalice_data
+          --with pytest --with httpx2
+          python -m pytest openbb_platform/extensions/openalice_data/tests -q
+
+  container:
+    name: Compose image
+    runs-on: ubuntu-latest
+    needs: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose
+        run: docker compose config -q
+      - name: Build Beta image
+        run: docker compose build
+      - name: Start Beta service
+        run: docker compose up -d
+      - name: Verify dashboard, readiness, and real OpenBB data
+        run: python scripts/verify_openalice_beta.py
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop Beta service
+        if: always()
+        run: docker compose down

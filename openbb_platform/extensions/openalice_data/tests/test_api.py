@@ -35,7 +35,13 @@ def _hub() -> DataHub:
 
 def test_api_exposes_exactly_four_read_only_agent_tools() -> None:
     router = create_api_router(_hub())
-    routes = [route for route in router.routes if isinstance(route, APIRoute)]
+    routes = [
+        route
+        for route in router.routes
+        if isinstance(route, APIRoute)
+        and route.openapi_extra
+        and route.openapi_extra.get("mcp_config", {}).get("expose") is True
+    ]
 
     assert {route.operation_id for route in routes} == {
         "search_catalog",
