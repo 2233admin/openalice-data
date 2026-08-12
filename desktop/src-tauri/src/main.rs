@@ -105,7 +105,7 @@ async fn check_and_apply_update(app: AppHandle, always_prompt: bool) {
             .kind(tauri_plugin_dialog::MessageDialogKind::Error)
             .show(|_| {});
     };
-    let update_url = "https://github.com/OpenBB-finance/OpenBB/releases/download/ODP/latest.json";
+    let update_url = "https://github.com/2233admin/openalice-data/releases/download/openalice-desktop/latest.json";
 
     let ap_id = get_or_create_app_id();
 
@@ -634,7 +634,7 @@ fn main() {
             let tray_handle = handle.clone();
             let tray = TrayIconBuilder::new()
                 .icon(icon)
-                .tooltip("Open Data Platform - By OpenBB")
+                .tooltip("OpenAlice Desktop - Based on OpenBB")
                 .menu(&menu)
                 .on_menu_event(move |_tray, event| {
                     let id_string = event.id().0.as_str();

@@ -248,7 +248,7 @@ function Root() {
 
             <footer className="w-full bg-theme-secondary">
                 <div className="container mx-auto text-center">
-                    <p className="body-sm-regular text-theme-muted mb-1 mt-1">Copyright © 2025 OpenBB Inc.</p>
+                    <p className="body-sm-regular text-theme-muted mb-1 mt-1">OpenAlice Desktop · Based on OpenBB</p>
                 </div>
             </footer>
         </div>

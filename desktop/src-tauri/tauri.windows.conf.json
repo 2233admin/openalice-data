@@ -1,7 +1,5 @@
 {
-  "build": {
-    "beforeBundleCommand": "pwsh -File src-tauri/scripts/sign.ps1"
-  },
+  "build": {},
   "plugins": {
     "updater": {
       "windows": {
