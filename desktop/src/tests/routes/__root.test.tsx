@@ -69,7 +69,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.getByText(/Copyright © 2025 OpenBB Inc./i)).toBeInTheDocument();
+    expect(screen.getByText(/OpenAlice Desktop · Based on OpenBB/i)).toBeInTheDocument();
   });
 
   test('displays navigation links when not in hidden views', async () => {
