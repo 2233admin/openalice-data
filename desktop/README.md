@@ -4,6 +4,10 @@ OpenAlice Desktop 基于 OpenBB 发布的 Open Data Platform Desktop 源码，�
 环境、扩展、API Keys、REST/MCP 后端与 JupyterLab 管理。OpenBB 原始版权、许可证
 与归属信息继续保留；OpenAlice 与 OpenBB 官方不存在赞助、背书或隶属关系。
 
+Desktop 管理的 CLI、REST、MCP、Jupyter 与 Provider 共享同一个 Python 环境；
+启动链和 Windows 验收方式见
+[`DESKTOP_RUNTIME_TOOLCHAIN.zh-CN.md`](../docs/DESKTOP_RUNTIME_TOOLCHAIN.zh-CN.md)。
+
 测试安装包发布在
 [OpenAlice Releases](https://github.com/2233admin/openalice-data/releases)。当前 Windows
 Beta 为未签名构建，Windows SmartScreen 可能提示未知发布者。
