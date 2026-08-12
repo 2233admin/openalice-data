@@ -1,8 +1,8 @@
 [package]
 name = "openbb-platform"
 version = "1.0.2"
-description = "Open Data Platform by OpenBB. A desktop application for managing virtual environments, application backend servers."
-authors = ["OpenBB, Inc."]
+description = "OpenAlice Desktop. A Chinese-first desktop application for managing OpenBB-compatible environments, extensions, and backend services."
+authors = ["OpenAlice contributors"]
 license = "AGPL-3.0"
 repository = "https://github.com/OpenBB-finance/OpenBB/"
 default-run = "openbb-platform"

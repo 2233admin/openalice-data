@@ -1,0 +1,118 @@
+name: OpenAlice Desktop Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (for example 0.1.0-beta.1)"
+        required: true
+        default: "0.1.0-beta.1"
+      draft:
+        description: "Create a draft release"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows-x64:
+    name: Windows x64 installer
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate requested version
+        shell: pwsh
+        run: |
+          if ("${{ inputs.version }}" -notmatch '^\d+\.\d+\.\d+([.-][0-9A-Za-z.-]+)?$') {
+            throw "Invalid release version: ${{ inputs.version }}"
+          }
+
+      - name: Apply release version
+        shell: pwsh
+        run: |
+          $configPath = "src-tauri/tauri.conf.json"
+          $config = Get-Content $configPath -Raw | ConvertFrom-Json
+          $config.version = "${{ inputs.version }}" -replace '-beta\.', '-beta.'
+          $config | ConvertTo-Json -Depth 20 | Set-Content $configPath
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Bootstrap vcpkg
+        working-directory: ${{ github.workspace }}
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_ROOT
+          & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat" -disableMetrics
+
+      - name: Install OpenSSL
+        working-directory: ${{ github.workspace }}
+        shell: pwsh
+        run: '& "$env:VCPKG_ROOT\vcpkg.exe" install openssl:x64-windows'
+
+      - name: Configure OpenSSL
+        shell: pwsh
+        run: |
+          "OPENSSL_DIR=$env:VCPKG_ROOT\installed\x64-windows" | Out-File $env:GITHUB_ENV -Append
+          "OPENSSL_INCLUDE_DIR=$env:VCPKG_ROOT\installed\x64-windows\include" | Out-File $env:GITHUB_ENV -Append
+          "OPENSSL_LIB_DIR=$env:VCPKG_ROOT\installed\x64-windows\lib" | Out-File $env:GITHUB_ENV -Append
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Stage OpenSSL runtime
+        run: npm run openssl:copy
+
+      - name: Create SBOM placeholders for Beta
+        shell: pwsh
+        run: |
+          if (-not (Test-Path src-tauri/open-data-platform-SBOM-cargo.cdx.xml)) { '<bom xmlns="http://cyclonedx.org/schema/bom/1.6" version="1"/>' | Set-Content src-tauri/open-data-platform-SBOM-cargo.cdx.xml }
+          if (-not (Test-Path src-tauri/open-data-platform-SBOM-npm.cdx.xml)) { '<bom xmlns="http://cyclonedx.org/schema/bom/1.6" version="1"/>' | Set-Content src-tauri/open-data-platform-SBOM-npm.cdx.xml }
+
+      - name: Build unsigned NSIS installer
+        run: npm run tauri build -- --target x86_64-pc-windows-msvc --bundles nsis
+        env:
+          OPENSSL_COPY_SKIP_EXISTING: "1"
+
+      - name: Prepare release assets
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          $installer = Get-ChildItem target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe | Select-Object -First 1
+          if (-not $installer) { throw "NSIS installer was not produced" }
+          Copy-Item $installer.FullName "release-assets/OpenAlice-Desktop_${{ inputs.version }}_windows-x64-unsigned.exe"
+          Get-FileHash "release-assets/*.exe" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $([IO.Path]::GetFileName($_.Path))" } | Set-Content release-assets/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openalice-desktop-windows-x64
+          path: desktop/release-assets/*
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: openalice-desktop-v${{ inputs.version }}
+          name: OpenAlice Desktop ${{ inputs.version }}
+          draft: ${{ inputs.draft }}
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            OpenAlice Desktop 的首个开源测试版本，基于 OpenBB Desktop。
+
+            当前提供 Windows x64 未签名安装包。Windows SmartScreen 可能显示未知发布者；请使用 SHA256SUMS.txt 校验下载文件。正式签名将在获得 OpenAlice 代码签名证书后启用。
+          files: desktop/release-assets/*

@@ -2,6 +2,21 @@
 
 **基于 OpenBB 的中文、多市场、易部署开源数据平台。**
 
+## OpenAlice Desktop
+
+OpenAlice 的主软件形态是基于 OpenBB Desktop 的桌面应用，用于管理隔离的
+Python 环境、数据 Provider、API Keys、REST/MCP 后端和 JupyterLab。当前源码位于
+[`desktop/`](desktop/)，不是 `/api/v1/data/` 下的 Beta 数据屏。
+
+Windows x64 测试安装包通过 GitHub Actions 构建，并发布到本仓库的
+[Releases](https://github.com/2233admin/openalice-data/releases)。首个测试版尚未使用
+商业代码签名证书，文件名会明确包含 `unsigned`，下载后应使用随附的
+`SHA256SUMS.txt` 校验。
+
+本地开发需要 Node.js 22、Rust stable 和 OpenSSL 3。完整开发说明见
+[`desktop/README.md`](desktop/README.md)。桌面代码源自 OpenBB，继续遵循 AGPL-3.0，
+并保留上游版权与归属。
+
 OpenAlice Data 保留 OpenBB 的标准模型、全球 Provider、REST 与 MCP 能力，补上中国市场习惯、双语数据目录、自定义市场入口和一条命令部署。首个 Beta 的目标很直接：只装 Docker，就能打开中文数据屏并拿到第一条真实数据。
 
 ## 一条命令启动
