@@ -4,3 +4,4 @@ pub mod environments;
 pub mod helpers;
 pub mod jupyter;
 pub mod startup;
+pub mod studio;

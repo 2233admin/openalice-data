@@ -17,7 +17,7 @@ function Base() {
         
         const isInstalled = event.payload;
         if (isInstalled) {
-          resolve("/environments");
+          resolve("/home");
         } else {
           resolve("/setup");
         }
@@ -38,7 +38,7 @@ function Base() {
           .then((state) => {
             console.log("Installation state from invoke:", state);
             if (state.is_installed) {
-              resolve("/environments");
+              resolve("/home");
             } else {
               resolve("/setup");
             }
@@ -69,7 +69,7 @@ function Base() {
     <div className="flex items-center justify-center h-screen">
       {loading && (
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Starting OpenBB Platform</h1>
+          <h1 className="text-2xl font-bold mb-4">正在启动 OpenAlice Data Platform</h1>
           <p className="text-gray-600">Checking installation status...</p>
         </div>
       )}

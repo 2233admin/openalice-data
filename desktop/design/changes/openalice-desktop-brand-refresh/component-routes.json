@@ -1,0 +1,392 @@
+{
+  "capabilities": [
+    "app-shell",
+    "data-table",
+    "dialog",
+    "navigation",
+    "side-nav",
+    "text-input",
+    "tooltip",
+    "typography"
+  ],
+  "platform": "web",
+  "query": "OpenAlice Chinese desktop app shell navigation data table status form dialog tooltip accessibility CJK typography using existing project UI",
+  "routes": [
+    {
+      "alternatives": [],
+      "capability": "app-shell",
+      "rationale": "Design Pipeline project-owned patterns is the strongest recorded web route.",
+      "selected": {
+        "capabilities": [
+          "app-shell",
+          "app-ui",
+          "button",
+          "card",
+          "cta",
+          "data-table",
+          "dialog",
+          "faq",
+          "features",
+          "hero",
+          "navigation",
+          "page-block",
+          "pricing",
+          "stats",
+          "tabs",
+          "text-input"
+        ],
+        "fallback": "Use semantic DOM, project tokens, and current dependencies.",
+        "id": "frontend-component-sources:component:project/app-ui",
+        "license": "project",
+        "matchedCapability": "app-shell",
+        "mode": "project-owned",
+        "name": "Project-owned app UI",
+        "platforms": [
+          "web"
+        ],
+        "source": "Design Pipeline project-owned patterns",
+        "status": "ready"
+      },
+      "status": "ready"
+    },
+    {
+      "alternatives": [],
+      "capability": "data-table",
+      "rationale": "Design Pipeline project-owned patterns is the strongest recorded web route.",
+      "selected": {
+        "capabilities": [
+          "app-shell",
+          "app-ui",
+          "button",
+          "card",
+          "cta",
+          "data-table",
+          "dialog",
+          "faq",
+          "features",
+          "hero",
+          "navigation",
+          "page-block",
+          "pricing",
+          "stats",
+          "tabs",
+          "text-input"
+        ],
+        "fallback": "Use semantic DOM, project tokens, and current dependencies.",
+        "id": "frontend-component-sources:component:project/app-ui",
+        "license": "project",
+        "matchedCapability": "data-table",
+        "mode": "project-owned",
+        "name": "Project-owned app UI",
+        "platforms": [
+          "web"
+        ],
+        "source": "Design Pipeline project-owned patterns",
+        "status": "ready"
+      },
+      "status": "ready"
+    },
+    {
+      "alternatives": [
+        {
+          "capabilities": [
+            "smoothui",
+            "animated-ui",
+            "app-ui",
+            "button",
+            "dialog",
+            "drawer",
+            "form",
+            "text-input",
+            "select",
+            "combobox",
+            "toggle",
+            "progress",
+            "stepper",
+            "tabs",
+            "tooltip",
+            "accordion",
+            "toast-notification",
+            "file-upload",
+            "pagination",
+            "breadcrumb",
+            "carousel",
+            "interactive-card",
+            "text-animation",
+            "shader-background",
+            "transition"
+          ],
+          "fallback": "Use project-owned semantic DOM, current UI dependencies, and the existing motion runtime; adapt only the named interaction.",
+          "id": "frontend-component-sources:component:smoothui/animated-components",
+          "license": "MIT",
+          "matchedCapability": "dialog",
+          "mode": "reference-adaptation",
+          "name": "SmoothUI animated React components",
+          "platforms": [
+            "web"
+          ],
+          "source": "SmoothUI",
+          "status": "review"
+        }
+      ],
+      "capability": "dialog",
+      "rationale": "Design Pipeline project-owned patterns is the strongest recorded web route.",
+      "selected": {
+        "capabilities": [
+          "app-shell",
+          "app-ui",
+          "button",
+          "card",
+          "cta",
+          "data-table",
+          "dialog",
+          "faq",
+          "features",
+          "hero",
+          "navigation",
+          "page-block",
+          "pricing",
+          "stats",
+          "tabs",
+          "text-input"
+        ],
+        "fallback": "Use semantic DOM, project tokens, and current dependencies.",
+        "id": "frontend-component-sources:component:project/app-ui",
+        "license": "project",
+        "matchedCapability": "dialog",
+        "mode": "project-owned",
+        "name": "Project-owned app UI",
+        "platforms": [
+          "web"
+        ],
+        "source": "Design Pipeline project-owned patterns",
+        "status": "ready"
+      },
+      "status": "ready"
+    },
+    {
+      "alternatives": [
+        {
+          "capabilities": [
+            "animated-background",
+            "animated-ui",
+            "app-ui",
+            "dither-background",
+            "hero",
+            "interactive-card",
+            "navigation",
+            "page-block",
+            "shader-background"
+          ],
+          "fallback": "Keep project-owned components and adapt only the routed technique.",
+          "id": "frontend-component-sources:component:mengto/reference-techniques",
+          "license": "MIT",
+          "matchedCapability": "navigation",
+          "mode": "reference-adaptation",
+          "name": "MengTo skill techniques",
+          "platforms": [
+            "web"
+          ],
+          "source": "MengTo/skills",
+          "status": "review"
+        }
+      ],
+      "capability": "navigation",
+      "rationale": "Design Pipeline project-owned patterns is the strongest recorded web route.",
+      "selected": {
+        "capabilities": [
+          "app-shell",
+          "app-ui",
+          "button",
+          "card",
+          "cta",
+          "data-table",
+          "dialog",
+          "faq",
+          "features",
+          "hero",
+          "navigation",
+          "page-block",
+          "pricing",
+          "stats",
+          "tabs",
+          "text-input"
+        ],
+        "fallback": "Use semantic DOM, project tokens, and current dependencies.",
+        "id": "frontend-component-sources:component:project/app-ui",
+        "license": "project",
+        "matchedCapability": "navigation",
+        "mode": "project-owned",
+        "name": "Project-owned app UI",
+        "platforms": [
+          "web"
+        ],
+        "source": "Design Pipeline project-owned patterns",
+        "status": "ready"
+      },
+      "status": "ready"
+    },
+    {
+      "alternatives": [],
+      "capability": "side-nav",
+      "rationale": "No web route advertises side-nav.",
+      "selected": null,
+      "status": "blocked"
+    },
+    {
+      "alternatives": [
+        {
+          "capabilities": [
+            "smoothui",
+            "animated-ui",
+            "app-ui",
+            "button",
+            "dialog",
+            "drawer",
+            "form",
+            "text-input",
+            "select",
+            "combobox",
+            "toggle",
+            "progress",
+            "stepper",
+            "tabs",
+            "tooltip",
+            "accordion",
+            "toast-notification",
+            "file-upload",
+            "pagination",
+            "breadcrumb",
+            "carousel",
+            "interactive-card",
+            "text-animation",
+            "shader-background",
+            "transition"
+          ],
+          "fallback": "Use project-owned semantic DOM, current UI dependencies, and the existing motion runtime; adapt only the named interaction.",
+          "id": "frontend-component-sources:component:smoothui/animated-components",
+          "license": "MIT",
+          "matchedCapability": "text-input",
+          "mode": "reference-adaptation",
+          "name": "SmoothUI animated React components",
+          "platforms": [
+            "web"
+          ],
+          "source": "SmoothUI",
+          "status": "review"
+        }
+      ],
+      "capability": "text-input",
+      "rationale": "Design Pipeline project-owned patterns is the strongest recorded web route.",
+      "selected": {
+        "capabilities": [
+          "app-shell",
+          "app-ui",
+          "button",
+          "card",
+          "cta",
+          "data-table",
+          "dialog",
+          "faq",
+          "features",
+          "hero",
+          "navigation",
+          "page-block",
+          "pricing",
+          "stats",
+          "tabs",
+          "text-input"
+        ],
+        "fallback": "Use semantic DOM, project tokens, and current dependencies.",
+        "id": "frontend-component-sources:component:project/app-ui",
+        "license": "project",
+        "matchedCapability": "text-input",
+        "mode": "project-owned",
+        "name": "Project-owned app UI",
+        "platforms": [
+          "web"
+        ],
+        "source": "Design Pipeline project-owned patterns",
+        "status": "ready"
+      },
+      "status": "ready"
+    },
+    {
+      "alternatives": [],
+      "capability": "tooltip",
+      "rationale": "SmoothUI is the strongest recorded web route.",
+      "selected": {
+        "capabilities": [
+          "smoothui",
+          "animated-ui",
+          "app-ui",
+          "button",
+          "dialog",
+          "drawer",
+          "form",
+          "text-input",
+          "select",
+          "combobox",
+          "toggle",
+          "progress",
+          "stepper",
+          "tabs",
+          "tooltip",
+          "accordion",
+          "toast-notification",
+          "file-upload",
+          "pagination",
+          "breadcrumb",
+          "carousel",
+          "interactive-card",
+          "text-animation",
+          "shader-background",
+          "transition"
+        ],
+        "fallback": "Use project-owned semantic DOM, current UI dependencies, and the existing motion runtime; adapt only the named interaction.",
+        "id": "frontend-component-sources:component:smoothui/animated-components",
+        "license": "MIT",
+        "matchedCapability": "tooltip",
+        "mode": "reference-adaptation",
+        "name": "SmoothUI animated React components",
+        "platforms": [
+          "web"
+        ],
+        "source": "SmoothUI",
+        "status": "review"
+      },
+      "status": "review"
+    },
+    {
+      "alternatives": [],
+      "capability": "typography",
+      "rationale": "React Bits DecryptedText is the strongest recorded web route.",
+      "selected": {
+        "capabilities": [
+          "react-bits",
+          "decrypted-text",
+          "text-animation",
+          "animated-ui",
+          "typography"
+        ],
+        "fallback": "Keep the real text in an accessible semantic layer and use the project motion runtime; reduced motion resolves directly to readable text.",
+        "id": "frontend-component-sources:component:react-bits/decrypted-text",
+        "license": "MIT + Commons Clause",
+        "matchedCapability": "typography",
+        "mode": "reference-adaptation",
+        "name": "React Bits DecryptedText",
+        "platforms": [
+          "web"
+        ],
+        "source": "React Bits DecryptedText",
+        "status": "review"
+      },
+      "status": "review"
+    }
+  ],
+  "schema": "design-pipeline.component-route.v1",
+  "status": "review",
+  "unavailable": [
+    "side-nav"
+  ]
+}

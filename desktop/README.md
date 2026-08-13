@@ -27,6 +27,14 @@ Download the latest version [here](https://github.com/OpenBB-finance/OpenBB/rele
 
 The remainder of this document is intended for orienting and onboarding to the codebase.
 
+## OpenBB Studio
+
+The user-facing Studio navigation and its runtime Inspector are documented in
+[`STUDIO_IMPLEMENTATION.md`](./STUDIO_IMPLEMENTATION.md). Studio reuses the
+existing ODP Desktop service, runtime, credential, extension, and logging
+commands. Added dependency licenses are recorded in
+[`THIRD_PARTY_LICENSES_STUDIO.md`](./THIRD_PARTY_LICENSES_STUDIO.md).
+
 ## Stack Overview
 
 ODP Desktop is built with a Tauri & React framework, the code is approximately 50/50, Rust/TypeScript.

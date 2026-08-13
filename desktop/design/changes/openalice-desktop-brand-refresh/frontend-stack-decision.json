@@ -1,0 +1,91 @@
+{
+  "blockers": [],
+  "capabilities": [
+    "accessibility",
+    "app-shell",
+    "cjk-typography",
+    "data-table",
+    "design-workflow",
+    "form",
+    "friction-logging",
+    "navigation",
+    "status",
+    "tailwindcss",
+    "tooltip"
+  ],
+  "evidence": [
+    "registry:2026-08-14",
+    "mengto:3f4c22d10055d3fdddb17248d59d0c1b731cb8d3",
+    "tool:design-pipeline/core@bundled",
+    "tool:design-pipeline/feedback-loop@bundled",
+    "tool:wevm/frog@702c4eadefe175a208290a99c36e7f4ac1390e53",
+    "tool:MengTo/skills@3f4c22d10055d3fdddb17248d59d0c1b731cb8d3"
+  ],
+  "framework": "react",
+  "recommendedSkills": [
+    "tailwindcss"
+  ],
+  "registryHash": "0336074efbddd55a1da44b5dc28a24f3453084b3c5e85f2104faec87bb89e6b0",
+  "reviews": [],
+  "schema": "design-pipeline.frontend-stack-decision.v1",
+  "selected": {
+    "styling": {
+      "id": "tailwindcss",
+      "label": "Tailwind CSS"
+    },
+    "uiLibrary": {
+      "id": "none",
+      "label": "None",
+      "license": "project",
+      "source": "project-owned"
+    }
+  },
+  "status": "ready",
+  "toolRoutes": [
+    {
+      "capabilities": [
+        "design-workflow"
+      ],
+      "id": "design-pipeline/core",
+      "mode": "project-owned",
+      "source": "bundled",
+      "status": "ready"
+    },
+    {
+      "capabilities": [
+        "friction-logging"
+      ],
+      "id": "design-pipeline/feedback-loop",
+      "mode": "project-owned",
+      "source": "bundled",
+      "status": "ready"
+    },
+    {
+      "capabilities": [
+        "friction-logging"
+      ],
+      "fallback": "design-pipeline/feedback-loop",
+      "id": "wevm/frog",
+      "license": "MIT",
+      "mode": "governed-candidate",
+      "requirements": [
+        "Node.js 22+",
+        "explicit GitHub repository and workflow permission"
+      ],
+      "revision": "702c4eadefe175a208290a99c36e7f4ac1390e53",
+      "source": "https://github.com/wevm/frog",
+      "status": "review"
+    },
+    {
+      "capabilities": [
+        "design-workflow"
+      ],
+      "id": "MengTo/skills",
+      "license": "MIT",
+      "mode": "bundled-index",
+      "revision": "3f4c22d10055d3fdddb17248d59d0c1b731cb8d3",
+      "source": "https://github.com/MengTo/skills",
+      "status": "ready"
+    }
+  ]
+}

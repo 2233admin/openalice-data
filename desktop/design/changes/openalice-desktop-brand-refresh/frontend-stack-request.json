@@ -1,0 +1,14 @@
+{
+  "schema": "design-pipeline.frontend-stack-request.v1",
+  "framework": "react",
+  "brief": "Chinese-first Tauri operational desktop UI using the existing Tailwind and project-owned @openbb/ui-pro layer; no new UI library.",
+  "existing": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none"
+  },
+  "requested": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none"
+  },
+  "capabilities": ["app-shell", "navigation", "data-table", "status", "form", "tooltip", "accessibility", "cjk-typography"]
+}

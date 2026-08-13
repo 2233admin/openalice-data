@@ -1,0 +1,28 @@
+{
+  "schema": "design-pipeline.toolchain-request.v1",
+  "framework": "react",
+  "brief": "Refresh the Tauri desktop shell and all connected OpenAlice Data Platform operational surfaces in Chinese while preserving the existing OpenBB runtime, routes, data connectivity, Tailwind styling and project-owned @openbb/ui-pro component layer.",
+  "existing": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none",
+    "projectUiLayer": "@openbb/ui-pro 0.6.10",
+    "router": "TanStack Router",
+    "desktopRuntime": "Tauri 2"
+  },
+  "requested": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none"
+  },
+  "capabilities": [
+    "app-shell",
+    "navigation",
+    "data-table",
+    "status",
+    "form",
+    "dialog",
+    "tooltip",
+    "accessibility",
+    "cjk-typography",
+    "design-workflow"
+  ]
+}

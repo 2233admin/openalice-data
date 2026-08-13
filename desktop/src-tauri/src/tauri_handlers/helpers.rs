@@ -975,7 +975,7 @@ pub async fn open_url_in_window(
         &label,
         tauri::WebviewUrl::External(parsed_url),
     )
-    .title(title.unwrap_or_else(|| "Open Data Platform".to_string()))
+    .title(title.unwrap_or_else(|| "OpenAlice Data Platform".to_string()))
     .inner_size(1200.0, 800.0)
     .center()
     .focused(true)

@@ -48,11 +48,11 @@ describe('Index Route', () => {
 
   test('displays loading message initially', () => {
     render(<IndexComponent />);
-    expect(screen.getByText(/Starting OpenBB Platform/i)).toBeInTheDocument();
+    expect(screen.getByText(/正在启动 OpenAlice Data Platform/i)).toBeInTheDocument();
     expect(screen.getByText(/Checking installation status.../i)).toBeInTheDocument();
   });
 
-  test('redirects to /environments if installed via event', async () => {
+  test('redirects to /home if installed via event', async () => {
     const unlistenMock = vi.fn();
     vi.mocked(listen).mockImplementation(async (eventName, handler) => {
       if (eventName === 'installation-status') {
@@ -76,7 +76,7 @@ describe('Index Route', () => {
       await Promise.resolve(); // Flush microtasks after render
     });
 
-    await waitFor(() => expect(window.location.href).toBe('/environments'));
+    await waitFor(() => expect(window.location.href).toBe('/home'));
     expect(vi.mocked(invoke)).not.toHaveBeenCalledWith('get_installation_state');
   });
 
