@@ -69,10 +69,11 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.getByText(/Copyright © 2025 OpenBB Inc./i)).toBeInTheDocument();
+    expect(screen.getByText('OPENALICE DATA PLATFORM')).toBeInTheDocument();
+    expect(screen.getByText(/Powered by OpenBB/i)).toBeInTheDocument();
   });
 
-  test('displays navigation links when not in hidden views', async () => {
+  test('displays Studio navigation and demotes infrastructure pages', async () => {
     const router = createTestRouter('/'); // Explicitly set path
     await act(async () => {
       render(
@@ -81,9 +82,9 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.getByText(/Backends/i)).toBeInTheDocument();
-    expect(screen.getByText(/Environments/i)).toBeInTheDocument();
-    expect(screen.getByText(/API Keys/i)).toBeInTheDocument();
+    for (const label of ['首页', '服务', '运行环境', 'API 凭证', '数据源', '数据目录', '查询', '扩展', '高级设置']) {
+      expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
+    }
   });
 
   test('hides navigation links in Jupyter logs view', async () => {
@@ -95,9 +96,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   test('hides navigation links in Backend logs view', async () => {
@@ -109,9 +108,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   test('hides navigation links in Setup view', async () => {
@@ -123,9 +120,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   test('hides navigation links in Installation Progress view', async () => {
@@ -137,8 +132,6 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 });

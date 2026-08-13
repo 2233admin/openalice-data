@@ -1,0 +1,147 @@
+{
+  "blockers": [],
+  "brief": "Refresh the Tauri desktop shell and all connected OpenAlice Data Platform operational surfaces in Chinese while preserving the existing OpenBB runtime, routes, data connectivity, Tailwind styling and project-owned @openbb/ui-pro component layer.",
+  "evidence": [
+    "registry:2026-08-14",
+    "mengto:3f4c22d10055d3fdddb17248d59d0c1b731cb8d3",
+    "tool:design-pipeline/core@bundled",
+    "tool:design-pipeline/feedback-loop@bundled",
+    "tool:wevm/frog@702c4eadefe175a208290a99c36e7f4ac1390e53",
+    "tool:MengTo/skills@3f4c22d10055d3fdddb17248d59d0c1b731cb8d3"
+  ],
+  "framework": "react",
+  "graphics": null,
+  "invocations": [
+    {
+      "command": null,
+      "kind": "agent-route",
+      "owner": "agent",
+      "target": "design-pipeline/core",
+      "toolId": "design-pipeline/core"
+    },
+    {
+      "command": null,
+      "kind": "agent-route",
+      "owner": "agent",
+      "target": "design-pipeline/feedback-loop",
+      "toolId": "design-pipeline/feedback-loop"
+    },
+    {
+      "command": null,
+      "kind": "agent-route",
+      "owner": "agent",
+      "target": "wevm/frog",
+      "toolId": "wevm/frog"
+    },
+    {
+      "command": null,
+      "kind": "agent-route",
+      "owner": "agent",
+      "target": "MengTo/skills",
+      "toolId": "MengTo/skills"
+    }
+  ],
+  "probes": [
+    {
+      "command": null,
+      "kind": "catalog",
+      "status": "available",
+      "toolId": "design-pipeline/core"
+    },
+    {
+      "command": null,
+      "kind": "catalog",
+      "status": "available",
+      "toolId": "design-pipeline/feedback-loop"
+    },
+    {
+      "command": null,
+      "kind": "catalog",
+      "status": "review",
+      "toolId": "wevm/frog"
+    },
+    {
+      "command": null,
+      "kind": "catalog",
+      "status": "available",
+      "toolId": "MengTo/skills"
+    }
+  ],
+  "recommendedSkills": [
+    "tailwindcss"
+  ],
+  "reviews": [],
+  "schema": "design-pipeline.toolchain-plan.v1",
+  "sourceHashes": {
+    "adapterRegistry": "00cfdb3b60c4388c248103164e340a39dc16719ff85367cd4586ece4649c729d",
+    "frontendRegistry": "0336074efbddd55a1da44b5dc28a24f3453084b3c5e85f2104faec87bb89e6b0",
+    "graphicsCatalog": "9baabd9656a05cf7ebf3a95399e11e348db50422ca068f7b00abee0caf1bc090"
+  },
+  "status": "ready",
+  "styling": {
+    "id": "tailwindcss",
+    "label": "Tailwind CSS"
+  },
+  "tools": [
+    {
+      "id": "design-pipeline/core",
+      "mode": "project-owned",
+      "source": "frontend-stack",
+      "status": "ready"
+    },
+    {
+      "id": "design-pipeline/feedback-loop",
+      "mode": "project-owned",
+      "source": "frontend-stack",
+      "status": "ready"
+    },
+    {
+      "id": "wevm/frog",
+      "mode": "governed-candidate",
+      "source": "frontend-stack",
+      "status": "review"
+    },
+    {
+      "id": "MengTo/skills",
+      "mode": "bundled-index",
+      "source": "frontend-stack",
+      "status": "ready"
+    }
+  ],
+  "uiLibrary": {
+    "id": "none",
+    "label": "None",
+    "license": "project",
+    "source": "project-owned"
+  },
+  "verification": [
+    {
+      "evidenceTypes": [
+        "design-workflow"
+      ],
+      "receiptSchema": "design-pipeline.toolchain-receipt.v1",
+      "toolId": "design-pipeline/core"
+    },
+    {
+      "evidenceTypes": [
+        "friction-logging"
+      ],
+      "receiptSchema": "design-pipeline.toolchain-receipt.v1",
+      "toolId": "design-pipeline/feedback-loop"
+    },
+    {
+      "evidenceTypes": [
+        "friction-logging"
+      ],
+      "receiptSchema": "design-pipeline.toolchain-receipt.v1",
+      "toolId": "wevm/frog"
+    },
+    {
+      "evidenceTypes": [
+        "design-workflow"
+      ],
+      "receiptSchema": "design-pipeline.toolchain-receipt.v1",
+      "toolId": "MengTo/skills"
+    }
+  ]
+}

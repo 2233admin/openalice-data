@@ -11,13 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UninstallRouteImport } from './routes/uninstall'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as JupyterLogsRouteImport } from './routes/jupyter-logs'
 import { Route as InstallationProgressRouteImport } from './routes/installation-progress'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as ExtensionsRouteImport } from './routes/extensions'
 import { Route as EnvironmentsRouteImport } from './routes/environments'
+import { Route as DataSourcesRouteImport } from './routes/data-sources'
+import { Route as DataCatalogRouteImport } from './routes/data-catalog'
 import { Route as BackendsRouteImport } from './routes/backends'
 import { Route as BackendLogsRouteImport } from './routes/backend-logs'
 import { Route as ApiKeysRouteImport } from './routes/api-keys'
+import { Route as AdvancedRouteImport } from './routes/advanced'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DataSourcesProviderIdRouteImport } from './routes/data-sources.$providerId'
 
 const UninstallRoute = UninstallRouteImport.update({
   id: '/uninstall',
@@ -27,6 +34,11 @@ const UninstallRoute = UninstallRouteImport.update({
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaygroundRoute = PlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JupyterLogsRoute = JupyterLogsRouteImport.update({
@@ -39,9 +51,29 @@ const InstallationProgressRoute = InstallationProgressRouteImport.update({
   path: '/installation-progress',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExtensionsRoute = ExtensionsRouteImport.update({
+  id: '/extensions',
+  path: '/extensions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EnvironmentsRoute = EnvironmentsRouteImport.update({
   id: '/environments',
   path: '/environments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataSourcesRoute = DataSourcesRouteImport.update({
+  id: '/data-sources',
+  path: '/data-sources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataCatalogRoute = DataCatalogRouteImport.update({
+  id: '/data-catalog',
+  path: '/data-catalog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BackendsRoute = BackendsRouteImport.update({
@@ -59,90 +91,148 @@ const ApiKeysRoute = ApiKeysRouteImport.update({
   path: '/api-keys',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdvancedRoute = AdvancedRouteImport.update({
+  id: '/advanced',
+  path: '/advanced',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataSourcesProviderIdRoute = DataSourcesProviderIdRouteImport.update({
+  id: '/$providerId',
+  path: '/$providerId',
+  getParentRoute: () => DataSourcesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/advanced': typeof AdvancedRoute
   '/api-keys': typeof ApiKeysRoute
   '/backend-logs': typeof BackendLogsRoute
   '/backends': typeof BackendsRoute
+  '/data-catalog': typeof DataCatalogRoute
+  '/data-sources': typeof DataSourcesRouteWithChildren
   '/environments': typeof EnvironmentsRoute
+  '/extensions': typeof ExtensionsRoute
+  '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
+  '/playground': typeof PlaygroundRoute
   '/setup': typeof SetupRoute
   '/uninstall': typeof UninstallRoute
+  '/data-sources/$providerId': typeof DataSourcesProviderIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/advanced': typeof AdvancedRoute
   '/api-keys': typeof ApiKeysRoute
   '/backend-logs': typeof BackendLogsRoute
   '/backends': typeof BackendsRoute
+  '/data-catalog': typeof DataCatalogRoute
+  '/data-sources': typeof DataSourcesRouteWithChildren
   '/environments': typeof EnvironmentsRoute
+  '/extensions': typeof ExtensionsRoute
+  '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
+  '/playground': typeof PlaygroundRoute
   '/setup': typeof SetupRoute
   '/uninstall': typeof UninstallRoute
+  '/data-sources/$providerId': typeof DataSourcesProviderIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/advanced': typeof AdvancedRoute
   '/api-keys': typeof ApiKeysRoute
   '/backend-logs': typeof BackendLogsRoute
   '/backends': typeof BackendsRoute
+  '/data-catalog': typeof DataCatalogRoute
+  '/data-sources': typeof DataSourcesRouteWithChildren
   '/environments': typeof EnvironmentsRoute
+  '/extensions': typeof ExtensionsRoute
+  '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
+  '/playground': typeof PlaygroundRoute
   '/setup': typeof SetupRoute
   '/uninstall': typeof UninstallRoute
+  '/data-sources/$providerId': typeof DataSourcesProviderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/advanced'
     | '/api-keys'
     | '/backend-logs'
     | '/backends'
+    | '/data-catalog'
+    | '/data-sources'
     | '/environments'
+    | '/extensions'
+    | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
+    | '/playground'
     | '/setup'
     | '/uninstall'
+    | '/data-sources/$providerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/advanced'
     | '/api-keys'
     | '/backend-logs'
     | '/backends'
+    | '/data-catalog'
+    | '/data-sources'
     | '/environments'
+    | '/extensions'
+    | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
+    | '/playground'
     | '/setup'
     | '/uninstall'
+    | '/data-sources/$providerId'
   id:
     | '__root__'
     | '/'
+    | '/advanced'
     | '/api-keys'
     | '/backend-logs'
     | '/backends'
+    | '/data-catalog'
+    | '/data-sources'
     | '/environments'
+    | '/extensions'
+    | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
+    | '/playground'
     | '/setup'
     | '/uninstall'
+    | '/data-sources/$providerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdvancedRoute: typeof AdvancedRoute
   ApiKeysRoute: typeof ApiKeysRoute
   BackendLogsRoute: typeof BackendLogsRoute
   BackendsRoute: typeof BackendsRoute
+  DataCatalogRoute: typeof DataCatalogRoute
+  DataSourcesRoute: typeof DataSourcesRouteWithChildren
   EnvironmentsRoute: typeof EnvironmentsRoute
+  ExtensionsRoute: typeof ExtensionsRoute
+  HomeRoute: typeof HomeRoute
   InstallationProgressRoute: typeof InstallationProgressRoute
   JupyterLogsRoute: typeof JupyterLogsRoute
+  PlaygroundRoute: typeof PlaygroundRoute
   SetupRoute: typeof SetupRoute
   UninstallRoute: typeof UninstallRoute
 }
@@ -163,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/jupyter-logs': {
       id: '/jupyter-logs'
       path: '/jupyter-logs'
@@ -177,11 +274,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstallationProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/extensions': {
+      id: '/extensions'
+      path: '/extensions'
+      fullPath: '/extensions'
+      preLoaderRoute: typeof ExtensionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/environments': {
       id: '/environments'
       path: '/environments'
       fullPath: '/environments'
       preLoaderRoute: typeof EnvironmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-sources': {
+      id: '/data-sources'
+      path: '/data-sources'
+      fullPath: '/data-sources'
+      preLoaderRoute: typeof DataSourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-catalog': {
+      id: '/data-catalog'
+      path: '/data-catalog'
+      fullPath: '/data-catalog'
+      preLoaderRoute: typeof DataCatalogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/backends': {
@@ -205,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiKeysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/advanced': {
+      id: '/advanced'
+      path: '/advanced'
+      fullPath: '/advanced'
+      preLoaderRoute: typeof AdvancedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -212,17 +344,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/data-sources/$providerId': {
+      id: '/data-sources/$providerId'
+      path: '/$providerId'
+      fullPath: '/data-sources/$providerId'
+      preLoaderRoute: typeof DataSourcesProviderIdRouteImport
+      parentRoute: typeof DataSourcesRoute
+    }
   }
 }
 
+interface DataSourcesRouteChildren {
+  DataSourcesProviderIdRoute: typeof DataSourcesProviderIdRoute
+}
+
+const DataSourcesRouteChildren: DataSourcesRouteChildren = {
+  DataSourcesProviderIdRoute: DataSourcesProviderIdRoute,
+}
+
+const DataSourcesRouteWithChildren = DataSourcesRoute._addFileChildren(
+  DataSourcesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdvancedRoute: AdvancedRoute,
   ApiKeysRoute: ApiKeysRoute,
   BackendLogsRoute: BackendLogsRoute,
   BackendsRoute: BackendsRoute,
+  DataCatalogRoute: DataCatalogRoute,
+  DataSourcesRoute: DataSourcesRouteWithChildren,
   EnvironmentsRoute: EnvironmentsRoute,
+  ExtensionsRoute: ExtensionsRoute,
+  HomeRoute: HomeRoute,
   InstallationProgressRoute: InstallationProgressRoute,
   JupyterLogsRoute: JupyterLogsRoute,
+  PlaygroundRoute: PlaygroundRoute,
   SetupRoute: SetupRoute,
   UninstallRoute: UninstallRoute,
 }

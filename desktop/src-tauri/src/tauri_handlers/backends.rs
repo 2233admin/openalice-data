@@ -1559,7 +1559,7 @@ pub async fn open_backend_logs_window(
         &window_label,
         tauri::WebviewUrl::App(format!("/backend-logs?id={id}").into()),
     )
-    .title(format!("Open Data Platform: {backend_name} Logs"))
+    .title(format!("OpenAlice Data Platform：{backend_name} 日志"))
     .inner_size(1000.0, 600.0)
     .resizable(true)
     .center()

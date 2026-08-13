@@ -1,0 +1,18 @@
+{
+  "schema": "design-pipeline.design-system-decision-request.v1",
+  "mode": "custom",
+  "customId": "openalice-project-ui",
+  "project": {
+    "designMd": "DESIGN.md",
+    "designSystem": {
+      "id": "openalice-project-ui",
+      "runtime": {
+        "react": "18.3.1",
+        "reactDom": "18.3.1"
+      },
+      "source": "project"
+    }
+  },
+  "frontendStackDecisionPath": "design/changes/openalice-desktop-brand-refresh/frontend-stack-decision.json",
+  "capabilityInventoryPath": "design/changes/openalice-desktop-brand-refresh/capability-inventory.json"
+}

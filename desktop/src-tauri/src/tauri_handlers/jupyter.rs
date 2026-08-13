@@ -598,7 +598,7 @@ pub async fn open_jupyter_logs_window(
         &window_label,
         tauri::WebviewUrl::App(format!("/jupyter-logs?env={environment}").into()),
     )
-    .title(format!("Open Data Platform: Jupyter Logs - {environment}"))
+    .title(format!("OpenAlice Data Platform：Jupyter 日志 - {environment}"))
     .inner_size(1000.0, 600.0)
     .resizable(true)
     .center()
