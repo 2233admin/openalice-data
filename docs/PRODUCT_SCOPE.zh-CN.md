@@ -1,6 +1,8 @@
-# OpenAlice Data Hub 产品范围与数据契约
+# OpenAlice Data Hub 扩展范围与数据契约
 
-状态：生效；决策者：仓库维护者；生效日期：2026-08-10；适用范围：本仓库、`openalice_data` 扩展、所有自有 Provider 与接入方。
+状态：生效；决策者：仓库维护者；生效日期：2026-08-10；适用范围：`openalice_data` 扩展及其数据集接入方。
+
+本文件不再定义整个 OpenAlice 产品。产品定位、Desktop、Platform 和用户承诺以 [PRODUCT_CHARTER.zh-CN.md](PRODUCT_CHARTER.zh-CN.md) 为准。
 
 本文规定当前产品边界。架构取舍见 [OPENALICE_DATA_DECISION.md](OPENALICE_DATA_DECISION.md)，字段与第三方条款入口见 [PROVIDER_COMPLIANCE.md](PROVIDER_COMPLIANCE.md)。
 
