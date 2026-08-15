@@ -1,0 +1,59 @@
+{
+  "schema": "design-pipeline.design-synthesis.v1",
+  "changeId": "openalice-desktop-brand-refresh",
+  "status": "ready-to-implement",
+  "stage": "implementation",
+  "initializedAt": "2026-08-13T17:56:58.529Z",
+  "updatedAt": "2026-08-13T18:03:46.737Z",
+  "artifactRoot": "design/changes/openalice-desktop-brand-refresh",
+  "projectRoot": "../../..",
+  "problem": "Redesign the existing OpenBB Desktop-derived operational UI into a coherent Chinese-first OpenAlice Data Platform, preserving official environment, credential, backend, extension, log, and provider connectivity workflows; replace the primary ODP/OpenBB shell branding with Alice branding while retaining required OpenBB technology and copyright attribution.",
+  "inputs": {
+    "mode": "requirements-only",
+    "framework": "Tauri 2 + React 18 + Vite 7 + Tailwind CSS 3 + @openbb/ui-pro",
+    "references": [],
+    "templates": []
+  },
+  "interaction": {
+    "mode": "human-in-loop",
+    "nextCommand": "Implement from DESIGN.md, change design.md, and tasks.md; then run normal design-pipeline QA.",
+    "message": "All synthesis gates passed. Continue without another interaction pause."
+  },
+  "scope": {
+    "budget": "program",
+    "threshold": 60,
+    "status": "fit",
+    "score": 47,
+    "surprise": false,
+    "counts": {
+      "surfaces": 8,
+      "workflows": 5,
+      "integrations": 2,
+      "unknowns": 2,
+      "decisions": 8
+    }
+  },
+  "wayfinder": {
+    "required": false,
+    "status": "not-required",
+    "mapUrl": null
+  },
+  "output": {
+    "path": "DESIGN.md",
+    "status": "validated",
+    "sha256": "912269ccb7dcd5b2298ce2941f8d5634ce0cc7b7692b0d2d49f8d0346b0470ab",
+    "validatedAt": "2026-08-13T18:03:38.895Z"
+  },
+  "evidence": [
+    {
+      "type": "grill",
+      "path": "design/changes/openalice-desktop-brand-refresh/decisions/grill.md",
+      "recordedAt": "2026-08-13T18:03:17.631Z"
+    },
+    {
+      "type": "design-validation",
+      "path": "DESIGN.md",
+      "recordedAt": "2026-08-13T18:03:38.895Z"
+    }
+  ]
+}

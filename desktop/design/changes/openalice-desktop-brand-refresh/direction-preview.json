@@ -1,0 +1,94 @@
+{
+  "schema": "design-pipeline.direction-preview.v1",
+  "changeId": "openalice-desktop-brand-refresh",
+  "applicability": {
+    "status": "required",
+    "reason": "visual-redesign"
+  },
+  "comparison": {
+    "brief": {
+      "path": "brief.md",
+      "sha256": "d62c796d37627bcd71157e2c491103e4b80a2e102351489a00cdb7f6d4cd46c4"
+    },
+    "index": {
+      "path": "direction-previews/index.html",
+      "sha256": "1c73dd4353e6cee82bc778844fbf0fe7ba6d52f4561cd2d2c5c2d22fe6bf88de"
+    },
+    "viewport": {
+      "width": 1200,
+      "height": 800
+    },
+    "contentFixtureSha256": "538e8861d9c85d821bae25264824b5e4b4bc0809478148da6b8ad7df7b2e8c05",
+    "stateCoverage": [
+      "research environment and API running",
+      "14 discovered providers",
+      "credential-required provider",
+      "ready provider",
+      "untested provider"
+    ]
+  },
+  "directions": [
+    {
+      "id": "alice-console",
+      "name": "Alice 控制台",
+      "thesis": "Warm-neutral dark operational console with grouped side navigation and globally visible runtime status.",
+      "signature": "Geometric Alice data-knot mark plus a source-to-query connection signal.",
+      "axes": {
+        "luminance": "dark",
+        "typeFamily": "system-sans-monospace-metadata",
+        "color": "warm-neutral-alice-teal",
+        "layout": "grouped-side-navigation",
+        "density": "compact-operational",
+        "era": "contemporary-desktop-console",
+        "material": "matte-layered-surfaces"
+      },
+      "screenshot": {
+        "path": "direction-previews/alice-console.png",
+        "sha256": "21aa2c0edbc9ec7a807aede69566c6dd699bf3824d545070d9e24a33769646a9"
+      }
+    },
+    {
+      "id": "data-ledger",
+      "name": "数据账本",
+      "thesis": "Paper-toned, typography-led dense ledger with top command navigation.",
+      "signature": "Provider data reads as an accountable technical register instead of cards.",
+      "axes": {
+        "luminance": "light-paper",
+        "typeFamily": "serif-heading-monospace-ui",
+        "color": "ink-stone-no-accent",
+        "layout": "top-command-ledger",
+        "density": "very-dense-ledger",
+        "era": "editorial-terminal-retro",
+        "material": "paper-and-rule"
+      },
+      "screenshot": {
+        "path": "direction-previews/data-ledger.png",
+        "sha256": "eaf40eca0b6e0ebf97b0c511b8889615484a2be148471ea1012a1c2da5dd1a83"
+      }
+    },
+    {
+      "id": "alice-atlas",
+      "name": "Alice 导航台",
+      "thesis": "Light guided workspace that makes environment-to-query progress visible before technical detail.",
+      "signature": "A compact three-step connection atlas grounded in actual API/provider state.",
+      "axes": {
+        "luminance": "bright-light",
+        "typeFamily": "friendly-system-sans",
+        "color": "deep-teal-mist",
+        "layout": "top-bar-guided-flow",
+        "density": "spacious-guided",
+        "era": "contemporary-onboarding-workspace",
+        "material": "soft-contained-panels"
+      },
+      "screenshot": {
+        "path": "direction-previews/alice-atlas.png",
+        "sha256": "1cbb36417ace561487de282ffaff5213f7cb15a70070e7aaa1bb973f84e39222"
+      }
+    }
+  ],
+  "decision": {
+    "status": "selected",
+    "selectedDirectionId": "alice-console",
+    "rationale": "Alice 控制台最适合高频桌面操作：它在不隐藏 OpenBB 系统能力的前提下改善中文扫描、最小窗口导航和连接可信度，也比引导型方案更节省垂直空间。"
+  }
+}

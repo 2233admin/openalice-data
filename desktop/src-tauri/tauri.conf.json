@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenAlice Desktop",
+  "productName": "OpenAlice Data Platform",
   "version": "1.0.2",
   "identifier": "io.openalice.desktop",
   "build": {
@@ -16,7 +16,7 @@
         "acceptFirstMouse": true,
         "visible": false,
         "resizable": true,
-        "title": "OpenAlice Desktop",
+        "title": "OpenAlice Data Platform",
         "width": 1024,
         "height": 768,
         "minWidth": 740,

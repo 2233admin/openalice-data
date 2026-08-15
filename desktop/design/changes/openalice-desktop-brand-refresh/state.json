@@ -1,0 +1,103 @@
+{
+  "blockers": [],
+  "changeId": "openalice-desktop-brand-refresh",
+  "evidence": [
+    "toolchain-plan:c6be43515a2b674028c108c5ebbe188731c98c702dbe5c6fbe5682076b9c9b6b",
+    "direction-selection:alice-console",
+    "design-system:openalice-project-ui"
+  ],
+  "extensions": {
+    "legacy": {
+      "artifactRoot": "design/changes/openalice-desktop-brand-refresh",
+      "capabilities": {
+        "fallbacks": [],
+        "missing": []
+      },
+      "decisions": [
+        "Treat reference sites and DESIGN.md templates as attributed evidence, not product authority"
+      ],
+      "designSynthesis": {
+        "manifest": "design/changes/openalice-desktop-brand-refresh/design-synthesis.json",
+        "output": "DESIGN.md",
+        "stage": "implementation",
+        "status": "ready-to-implement"
+      },
+      "gbrain": {
+        "detected": false,
+        "paths": [],
+        "syncPlanned": false
+      },
+      "motion": {
+        "implementationLibrary": "unknown",
+        "motionSpec": "design/changes/openalice-desktop-brand-refresh/motion.md",
+        "reducedMotion": "pending",
+        "required": false
+      },
+      "openSpec": {
+        "changeId": "openalice-desktop-brand-refresh",
+        "detected": false,
+        "paths": [
+          "design/changes/openalice-desktop-brand-refresh"
+        ]
+      },
+      "projectRoot": ".",
+      "qa": {
+        "evidenceRoot": "design/changes/openalice-desktop-brand-refresh/qa.md",
+        "scores": {},
+        "status": "not-run"
+      },
+      "surfaces": [
+        "DESIGN.md"
+      ]
+    },
+    "legacyEvents": {
+      "count": 5,
+      "sha256": "8a4513d7b4065ef5748f5528abb94e4c6f5d55f162eb35b86bcfcf1c36cddb57"
+    },
+    "legacyStatus": "in-progress",
+    "unknown": {
+      "motionFoundation": {
+        "path": "MOTION.md",
+        "posture": "minimal",
+        "primitiveRegistry": "design-pipeline.motion-primitives.v1",
+        "selectedPrimitives": [
+          "reveal.trim-line"
+        ],
+        "sha256": "b5b16897bf7adb30791965a0bb15b17c05613acba02f480db1598078aa7f5353",
+        "status": "ready"
+      }
+    }
+  },
+  "foundations": {
+    "design": {
+      "path": "DESIGN.md",
+      "sha256": "912269ccb7dcd5b2298ce2941f8d5634ce0cc7b7692b0d2d49f8d0346b0470ab",
+      "status": "ready",
+      "validator": "designer-pipeline foundation check --kind design"
+    },
+    "motion": {
+      "path": "MOTION.md",
+      "sha256": "b5b16897bf7adb30791965a0bb15b17c05613acba02f480db1598078aa7f5353",
+      "status": "ready",
+      "validator": "designer-pipeline foundation check --kind motion"
+    }
+  },
+  "lastEventSeq": 2,
+  "migration": {
+    "sourceNextField": "nextActions",
+    "sourcePhaseField": "phase",
+    "sourceSchema": "design-pipeline.state.v1",
+    "sourceSha256": "fd3b6d06082cb572d53f2317bd2c38b7f673b342c3d847a2cb5c2bb75a9a5564",
+    "sourceStatus": "in-progress"
+  },
+  "nextActions": [
+    "Await explicit implementation authority; then create execution-request.json and run execution route/prepare before BuilderPort work."
+  ],
+  "phase": "implementation",
+  "registryVersion": "design-pipeline.phases.v2",
+  "revision": 2,
+  "sceneRuntime": null,
+  "schema": "design-pipeline.state.v2",
+  "status": "ready",
+  "updatedAt": "2026-08-14T02:20:00.000Z"
+}

@@ -30,8 +30,11 @@ export default defineConfig(async () => ({
         chunkSizeWarningLimit: 1000, // Increase chunk size warning limit to 1MB
         rollupOptions: {
 			output: {
-				manualChunks(id: string) {
+			manualChunks(id: string) {
 				if (id.includes('node_modules')) {
+					if (id.includes('echarts') || id.includes('zrender')) {
+						return 'vendor-charts';
+					}
 					if (id.includes('@openbb')) {
 					return 'vendor-openbb';
 					}

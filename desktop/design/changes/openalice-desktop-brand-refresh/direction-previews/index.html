@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OpenAlice 方向预览</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#e8ebe7;color:#17201c;font:14px/1.55 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff;border-bottom:1px solid #cdd4cf}header b{font-size:16px}header span{color:#647069}main{padding:18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.stage{min-height:690px;overflow:hidden;border:1px solid #bfc8c2;background:#fff;box-shadow:0 8px 24px #26342b18}.label{padding:12px 16px;border-bottom:1px solid #d6ddd8}.label strong{display:block;font-size:16px}.label small{color:#6d7972}.ui{height:632px;display:grid}.alice{grid-template-columns:138px 1fr;background:#111413;color:#f2f4ef}.alice aside{padding:18px 10px;background:#181c1a;border-right:1px solid #303732}.brand{color:#35d6b2;font-weight:700;margin-bottom:28px}.nav{padding:9px 10px;margin:4px 0;color:#9ba69f}.nav.on{border-left:3px solid #35d6b2;background:#173b33;color:#fff}.alice section{padding:18px}.status{display:flex;gap:8px;color:#9ba69f;font-size:12px}.alice h2{font-size:22px;margin:20px 0 4px}.alice p{color:#9ba69f;margin:0 0 22px}.table{border:1px solid #303732}.row{display:grid;grid-template-columns:1.3fr .8fr .7fr;padding:12px;border-bottom:1px solid #303732}.row.head{font-size:11px;color:#9ba69f;background:#202522}.ok{color:#35d6b2}.ledger{grid-template-rows:48px 1fr;background:#f4f3ef;color:#20231f}.ledger nav{display:flex;align-items:center;gap:18px;padding:0 16px;border-bottom:2px solid #1d2520;font-family:ui-monospace,monospace}.ledger section{padding:22px}.ledger h2{font:600 25px Georgia,serif}.ledger .table{border-color:#2c342e}.ledger .row{border-color:#aab2ac}.ledger .row.head{background:#dfe3de;color:#465149}.atlas{grid-template-rows:64px 1fr;background:#f3f7f7;color:#163032}.atlas nav{display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#12383b;color:#eafafa}.atlas section{padding:20px}.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.step{padding:14px;background:#fff;border:1px solid #b6d6d4;border-radius:12px}.atlas .table{border-color:#b6d6d4;background:#fff;border-radius:12px;overflow:hidden}.atlas .row{border-color:#d8e7e6}.atlas .row.head{background:#e6f2f1;color:#3f6464}@media(max-width:900px){main{grid-template-columns:1fr}.stage{min-height:620px}}
+  </style>
+</head>
+<body data-direction-preview>
+<header><b>OpenAlice Data Platform · 方向预览</b><span>同一数据源状态 · 1200 × 800</span></header>
+<main>
+  <article class="stage" data-direction-id="alice-console"><div class="label"><strong>A · Alice 控制台</strong><small>分组侧栏、全局连接状态、暖中性深色</small></div><div class="ui alice"><aside><div class="brand">◈ OpenAlice</div><div class="nav">首页</div><div class="nav on">数据源</div><div class="nav">数据目录</div><div class="nav">查询工作台</div><div class="nav">服务与环境</div></aside><section><div class="status">research 环境 · <span class="ok">API 运行中</span></div><h2>数据源</h2><p>当前环境已发现 14 个真实数据源。</p><div class="table"><div class="row head"><span>数据源</span><span>状态</span><span>能力</span></div><div class="row"><b>Alpha Vantage</b><span>需要凭证</span><span>3 项</span></div><div class="row"><b>Benzinga</b><span class="ok">可用</span><span>4 项</span></div><div class="row"><b>CBOE</b><span>待验证</span><span>11 项</span></div></div></section></div></article>
+  <article class="stage" data-direction-id="data-ledger"><div class="label"><strong>B · 数据账本</strong><small>顶部命令导航、纸张色、高密度 ledger</small></div><div class="ui ledger"><nav><b>OPENALICE</b><span>数据</span><span>系统</span><span>⌕ 搜索</span></nav><section><small>research / providers</small><h2>数据源账本</h2><p>14 sources · 37 capabilities · API online</p><div class="table"><div class="row head"><span>NAME / ID</span><span>STATE</span><span>CAPS</span></div><div class="row"><b>Alpha Vantage</b><span>KEY NEEDED</span><span>03</span></div><div class="row"><b>Benzinga</b><span>READY</span><span>04</span></div><div class="row"><b>CBOE</b><span>UNTESTED</span><span>11</span></div></div></section></div></article>
+  <article class="stage" data-direction-id="alice-atlas"><div class="label"><strong>C · Alice 导航台</strong><small>连接流程、浅色、友好引导</small></div><div class="ui atlas"><nav><b>◈ OpenAlice</b><span>research · 已连接</span></nav><section><h2>从环境到真实数据</h2><p>连接状态和下一步在同一条路径上。</p><div class="flow"><div class="step"><b>1 服务</b><br><small>API 运行中</small></div><div class="step"><b>2 数据源</b><br><small>已发现 14 个</small></div><div class="step"><b>3 查询</b><br><small>开始运行</small></div></div><div class="table"><div class="row head"><span>需要处理</span><span>影响</span><span>操作</span></div><div class="row"><b>Alpha Vantage</b><span>缺少凭证</span><span>去配置</span></div><div class="row"><b>CBOE</b><span>尚未验证</span><span>运行测试</span></div></div></section></div></article>
+</main>
+<script>
+  const selected = new URLSearchParams(location.search).get("direction");
+  if (selected) {
+    document.querySelectorAll("[data-direction-id]").forEach((stage) => {
+      stage.style.display = stage.dataset.directionId === selected ? "block" : "none";
+    });
+    document.querySelector("main").style.gridTemplateColumns = "minmax(0, 1fr)";
+    document.querySelector("main").style.maxWidth = "1180px";
+    document.querySelector("main").style.margin = "0 auto";
+  }
+</script>
+</body></html>

@@ -39,11 +39,12 @@ use crate::tauri_handlers::credentials::{
     get_user_credentials, open_credentials_file, update_user_credentials,
 };
 
+use crate::tauri_handlers::studio::inspect_studio_environment;
+
 use crate::tauri_handlers::backends::{
     create_backend_service, delete_backend_service, initialize_backends, list_backend_services,
     open_backend_logs_window, start_backend_service, stop_backend_service, update_backend_service,
 };
-use crate::tauri_handlers::studio::inspect_studio_environment;
 
 use crate::utils::certs::generate_self_signed_cert;
 
@@ -640,7 +641,7 @@ fn main() {
             let tray_handle = handle.clone();
             let tray = TrayIconBuilder::new()
                 .icon(icon)
-                .tooltip("OpenAlice Desktop - Based on OpenBB")
+                .tooltip("OpenAlice Data Platform - Powered by OpenBB")
                 .menu(&menu)
                 .on_menu_event(move |_tray, event| {
                     let id_string = event.id().0.as_str();
