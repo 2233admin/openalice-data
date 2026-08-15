@@ -53,3 +53,13 @@ WSL follow-up
 - Direct Python SDK query `obb.currency.reference_rates(provider="ecb")` reached the ECB source without the Desktop OpenBB API and returned live data dated `2026-08-14`, including `EUR=1.0`, `USD=1.1567`, `JPY=183.93`, and 31 currency fields.
 - Credential behavior was also real: `obb.equity.price.quote(symbol="AAPL", provider="fmp")` failed before HTTP with `Missing credential 'fmp_api_key'`.
 - WSL Provider installation does not alter the Windows managed Conda environment or the Desktop catalog. Desktop integration still requires installing into the Windows managed environment, or implementing explicit WSL backend/environment support.
+
+Post-push fixes (commit 07ab76389)
+- `inspect_studio_environment` now receives the selected Backend URL and Rust inspection uses it for OpenAPI, coverage, command-model, and provider-metadata requests. Regression test `prefers_configured_backend_url_for_inspection` passes.
+- Replaced internal Studio `<a href>` navigation with `StudioLink`, which preserves `href` but routes through TanStack Router; fixed workspace detail links to use concrete IDs. Added `StudioLink` and workspace route tests.
+- Service start now polls OpenAPI and provider coverage readiness with a bounded timeout before refetching Studio state.
+- Managed YAML no longer requires external Git: root, patched `openbb-core`, and A-share install from GitHub archive URLs with `#subdirectory`; Docker installs local patched core before the root package.
+- Provider metadata reads credentials from disk per request, so Desktop credential saves are reflected without API restart.
+- Local verification after fixes: desktop 30 files passed, 202 tests passed, 1 skipped; desktop build and lint passed; Rust 132 tests passed and rustfmt passed; Python coverage tests 4 passed.
+- GitHub Actions run `31895273416` passed all three Python contract jobs and Compose image verification, including real OpenBB readiness/data checks.
+- Docker build could not run locally because Docker Desktop Linux daemon was unavailable; CI built and exercised the image successfully.
