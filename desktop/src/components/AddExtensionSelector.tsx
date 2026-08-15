@@ -121,15 +121,18 @@ export const AddExtensionSelector = ({
   onInstallExtensions,
   installedPackages = new Set(),
   onCancel,
+  excludeCategories = [],
 }: {
   onInstallExtensions: (extensionIds: string[]) => void;
   installedPackages?: Set<string>;
   onCancel?: () => void;
+  excludeCategories?: string[];
 }) => {
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeCategoryTab, setActiveCategoryTab] = useState(categories[0].id);
+  const availableCategories = categories.filter((category) => !excludeCategories.includes(category.id));
+  const [activeCategoryTab, setActiveCategoryTab] = useState(availableCategories[0]?.id ?? categories[0].id);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
 
   // Track selected extensions - start with an empty array for no pre-selection
@@ -419,28 +422,26 @@ export const AddExtensionSelector = ({
     }
   };
 
-	const getCheckboxState = (categoryId: string) => {
-		const categoryExtensions = getExtensionsByCategory(categoryId);
-		const totalCount = categoryExtensions.length;
-		const selectedCount = countSelectedInCategory(categoryId);
+  const getCheckboxState = (categoryId: string) => {
+    const categoryExtensions = getExtensionsByCategory(categoryId);
+    const totalCount = categoryExtensions.length;
+    const selectedCount = countSelectedInCategory(categoryId);
 
-    if (selectedCount === 0) return 'unchecked';
-    if (selectedCount === totalCount) return 'checked';
-    return 'indeterminate';
-	};
+    if (selectedCount === 0) return "unchecked";
+    if (selectedCount === totalCount) return "checked";
+    return "indeterminate";
+  };
 
-  // Update the useEffect to use the new hasMatchingExtensions
   useEffect(() => {
-    // If current active tab has no matches, switch to first available tab
-    if (!hasMatchingExtensions(extensions, activeCategoryTab, localSearchQuery, installedPackages)) {
-      const firstMatchingCategory = categories.find(category =>
+    // If current active tab has no matches, switch to the first visible category.
+    if (!availableCategories.some((category) => category.id === activeCategoryTab)
+      || !hasMatchingExtensions(extensions, activeCategoryTab, localSearchQuery, installedPackages)) {
+      const firstMatchingCategory = availableCategories.find((category) =>
         hasMatchingExtensions(extensions, category.id, localSearchQuery, installedPackages)
       );
-      if (firstMatchingCategory) {
-        setActiveCategoryTab(firstMatchingCategory.id);
-      }
+      if (firstMatchingCategory) setActiveCategoryTab(firstMatchingCategory.id);
     }
-  }, [localSearchQuery, activeCategoryTab, extensions, installedPackages]);
+  }, [activeCategoryTab, availableCategories, extensions, installedPackages, localSearchQuery]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center px-5">
@@ -470,14 +471,14 @@ export const AddExtensionSelector = ({
             </div>
             {/* Tab bar for categories */}
             <div className="flex gap-4 whitespace-nowrap mb-5 border-b-2 border-theme-accent">
-              {categories
-                .filter(category => hasMatchingExtensions(extensions, category.id, localSearchQuery, installedPackages))
+              {availableCategories
+                .filter((category) => hasMatchingExtensions(extensions, category.id, localSearchQuery, installedPackages))
                 .map((category, idx) => (
                   <div key={category.id} className="flex items-center">
                     <button
                       type="button"
                       className={`py-1 text-theme transition-colors
-                        ${idx === 0 ? 'pl-0' : 'px-0'}
+                        ${idx === 0 ? "pl-0" : "px-0"}
                         ${activeCategoryTab === category.id
                           ? "body-sm-bold border-b tab-border-active text-theme-accent relative -bottom-0.5"
                           : "body-sm-medium text-theme-muted relative -bottom-0.5 "}
@@ -496,7 +497,7 @@ export const AddExtensionSelector = ({
             {/* Category description and select/clear all button */}
             <div className="mb-5 flex justify-between items-center">
               <p className="body-sm-regular text-theme-secondary w-full">
-                {categories.find(c => c.id === activeCategoryTab)?.description}
+                {availableCategories.find((category) => category.id === activeCategoryTab)?.description}
               </p>
             </div>
 
@@ -523,7 +524,7 @@ export const AddExtensionSelector = ({
 
             {/* Only show the active tab's category content */}
             <div className="mb-3">
-              {categories.map((category) => {
+              {availableCategories.map((category) => {
                 if (category.id !== activeCategoryTab) return null;
 
                 const categoryExtensions = getFilteredExtensions(category.id);

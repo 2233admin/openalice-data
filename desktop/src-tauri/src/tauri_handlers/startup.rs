@@ -1510,15 +1510,14 @@ dependencies:
   - setuptools
   - pip:
       - notebook
+      - jupyterlab
       - jupyterlab-lsp
       - "python-lsp-server[all]"
       - jupyterlab-latex
       - "anywidget[dev]"
       - ipywidgets
-      - openbb-cli
-      - openbb-platform-api
-      - openbb-mcp-server
-      - openbb-yfinance
+      - "openbb[all] @ git+https://github.com/2233admin/openalice-data.git@main#subdirectory=openbb_platform"
+      - "openalice-ashare-provider @ git+https://github.com/2233admin/openalice-data.git@main#subdirectory=openbb_platform/providers/ashare"
 "#
     );
 
@@ -1792,10 +1791,12 @@ mod tests {
         assert!(result.is_ok());
         let content = written.lock().unwrap();
         assert!(content.contains("python=3.10"));
-        assert!(content.contains("openbb-cli"));
-        assert!(content.contains("openbb-platform-api"));
-        assert!(content.contains("openbb-mcp-server"));
-        assert!(content.contains("openbb-yfinance"));
+        // Runtime toolchain components must be explicit pip entries, not transitive deps
+        assert!(content.contains("\n      - jupyterlab\n"));
+        assert!(content.contains("openbb[all]"));
+        assert!(content.contains("subdirectory=openbb_platform\""));
+        assert!(content.contains("openalice-ashare-provider"));
+        assert!(content.contains("subdirectory=openbb_platform/providers/ashare"));
         assert!(content.contains("jupyterlab-lsp"));
     }
 

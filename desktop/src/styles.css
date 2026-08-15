@@ -41,6 +41,14 @@
 }
 
 :root {
+  --alice-canvas: #f5f6f2;
+  --alice-surface: #ffffff;
+  --alice-raised: #ecefea;
+  --alice-line: #d7ddd6;
+  --alice-text: #19201c;
+  --alice-muted: #5f6b64;
+  --alice-signal: #087f69;
+  --alice-signal-soft: #ddf5ee;
   --bg-primary: #ffffff;
   --bg-secondary: #f7f7f9;
   --bg-tertiary: #efeff2;
@@ -79,6 +87,14 @@
 }
 
 .dark {
+  --alice-canvas: #111413;
+  --alice-surface: #181c1a;
+  --alice-raised: #202522;
+  --alice-line: #303732;
+  --alice-text: #f2f4ef;
+  --alice-muted: #9ba69f;
+  --alice-signal: #35d6b2;
+  --alice-signal-soft: #173b33;
   --bg-primary: #212124;
   --bg-secondary: rgba(21, 21, 24, 1);
   --bg-tertiary: rgba(31, 30, 35, 1);
@@ -579,3 +595,8 @@ input[type=number] {
     opacity: 1;
     pointer-events: auto;
 }
+
+.alice-brand { display:flex; align-items:center; gap:10px; min-width:0; }
+.alice-brand .alice-mark { width:30px; height:30px; flex:none; color:var(--text-accent); }
+.alice-brand-copy { display:flex; min-width:0; flex-direction:column; }
+.alice-brand-copy strong { font-family:ui-monospace,"Cascadia Code",monospace; font-size:13px; line-height:20px; font-weight:500; letter-spacing:.18em; white-space:nowrap; }

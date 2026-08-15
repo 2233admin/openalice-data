@@ -1,0 +1,94 @@
+{
+  "blockers": [],
+  "changeId": "studio-ux-architecture",
+  "evidence": [
+    "design/changes/studio-ux-architecture/qa.md"
+  ],
+  "extensions": {
+    "legacy": {
+      "artifactRoot": "design/changes/studio-ux-architecture",
+      "capabilities": {
+        "fallbacks": [],
+        "missing": []
+      },
+      "decisions": [
+        "Treat reference sites and DESIGN.md templates as attributed evidence, not product authority"
+      ],
+      "designSynthesis": {
+        "manifest": "design/changes/studio-ux-architecture/design-synthesis.json",
+        "output": "DESIGN.md",
+        "stage": "implementation",
+        "status": "ready-to-implement"
+      },
+      "gbrain": {
+        "detected": false,
+        "paths": [],
+        "syncPlanned": false
+      },
+      "motion": {
+        "implementationLibrary": "unknown",
+        "motionSpec": "design/changes/studio-ux-architecture/motion.md",
+        "reducedMotion": "pending",
+        "required": false
+      },
+      "openSpec": {
+        "changeId": "studio-ux-architecture",
+        "detected": false,
+        "paths": [
+          "design/changes/studio-ux-architecture"
+        ]
+      },
+      "projectRoot": ".",
+      "qa": {
+        "evidenceRoot": "design/changes/studio-ux-architecture/qa.md",
+        "scores": {},
+        "status": "not-run"
+      },
+      "surfaces": [
+        "DESIGN.md"
+      ]
+    },
+    "legacyEvents": {
+      "count": 5,
+      "sha256": "91b0cedcaecaac565c36550fc9da329cdf60bf0b76be3185e2c3b8772623374b"
+    },
+    "legacyStatus": "in-progress",
+    "unknown": {
+      "motionFoundation": {
+        "path": "MOTION.md",
+        "posture": "static",
+        "primitiveRegistry": "design-pipeline.motion-primitives.v1",
+        "selectedPrimitives": [],
+        "sha256": "0cfca3c3f67be1d102300ec1637089a10ec9cc07d812dd0c86446075686fd490",
+        "status": "ready"
+      }
+    }
+  },
+  "foundations": {
+    "design": {
+      "path": "DESIGN.md",
+      "sha256": "e699c5b203105c760729ca73948583fd0d056ac67c2f517c566459be468c4a7e",
+      "status": "ready",
+      "validator": null
+    },
+    "motion": null
+  },
+  "lastEventSeq": 4,
+  "migration": {
+    "sourceNextField": "nextActions",
+    "sourcePhaseField": "phase",
+    "sourceSchema": "design-pipeline.state.v1",
+    "sourceSha256": "a01dc4bfe8b4157a9c4c00f3ca585e205b7706183ed96d86199ab9e5b7786d72",
+    "sourceStatus": "in-progress"
+  },
+  "nextActions": [
+    "Archive this change after the user reviews the documented limitations."
+  ],
+  "phase": "release-readiness",
+  "registryVersion": "design-pipeline.phases.v2",
+  "revision": 4,
+  "sceneRuntime": null,
+  "schema": "design-pipeline.state.v2",
+  "status": "ready",
+  "updatedAt": "2026-08-14T20:00:38.737Z"
+}

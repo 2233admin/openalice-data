@@ -2,7 +2,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import { Route } from '../../routes/__root';
-import { RouterProvider, createRouter, useRouter } from '@tanstack/react-router';
+import { RouterProvider, createRouter, useRouter, useLocation } from '@tanstack/react-router';
 import { EnvironmentCreationProvider } from '../../contexts/EnvironmentCreationContext';
 
 beforeAll(() => {
@@ -27,6 +27,7 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     useRouter: vi.fn(),
+    useLocation: vi.fn(),
     useMatch: vi.fn(() => ({ pathname: '/' })),
   };
 });
@@ -38,10 +39,11 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 describe('Root Route', () => {
   const createTestRouter = (initialPath = '/') => {
-    (useRouter as ReturnType<typeof vi.fn>).mockReturnValue({
+    vi.mocked(useRouter).mockReturnValue({
       state: { location: { pathname: initialPath } },
       navigate: vi.fn(),
-    });
+    } as never);
+    vi.mocked(useLocation).mockReturnValue({ pathname: initialPath } as never);
 
     const router = createRouter({
       routeTree: Route,
@@ -53,11 +55,12 @@ describe('Root Route', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset useRouter mock to its default for each test
-    (useRouter as ReturnType<typeof vi.fn>).mockReturnValue({
+    // Reset router mocks to their defaults for each test
+    vi.mocked(useRouter).mockReturnValue({
       state: { location: { pathname: '/' } },
       navigate: vi.fn(),
-    });
+    } as never);
+    vi.mocked(useLocation).mockReturnValue({ pathname: '/' } as never);
   });
 
   test('renders Root component without crashing', async () => {
@@ -69,11 +72,12 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.getByText(/OpenAlice Desktop · Based on OpenBB/i)).toBeInTheDocument();
+    expect(screen.getByText('OPENALICE DATA PLATFORM')).toBeInTheDocument();
+    expect(screen.getByText(/Powered by OpenBB/i)).toBeInTheDocument();
   });
 
-  test('displays navigation links when not in hidden views', async () => {
-    const router = createTestRouter('/'); // Explicitly set path
+  test('exposes the normal user intents without hiding infrastructure capabilities', async () => {
+    const router = createTestRouter('/home');
     await act(async () => {
       render(
         <EnvironmentCreationProvider>
@@ -81,13 +85,19 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.getByText(/Backends/i)).toBeInTheDocument();
-    expect(screen.getByText(/Environments/i)).toBeInTheDocument();
-    expect(screen.getByText(/API Keys/i)).toBeInTheDocument();
+
+    const navigation = screen.getByRole('navigation', { name: '主导航' });
+    const links = Array.from(navigation.querySelectorAll('a'));
+    expect(links.map((link) => link.textContent)).toEqual(['首页', '工作区', '数据源', '查询', '扩展', '日志']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/home', '/workspaces', '/data-sources', '/query', '/extensions', '/diagnostics']);
+    expect(screen.getByRole('link', { name: '首页' })).toHaveAttribute('aria-current', 'page');
+    for (const infrastructureLabel of ['服务', '运行环境', 'API 凭证', '数据目录']) {
+      expect(screen.queryByRole('link', { name: infrastructureLabel })).not.toBeInTheDocument();
+    }
   });
 
-  test('hides navigation links in Jupyter logs view', async () => {
-    const router = createTestRouter('/jupyter-logs'); // Explicitly set path
+  test('keeps an infrastructure deep link reachable without making it a routine tab', async () => {
+    const router = createTestRouter('/backends');
     await act(async () => {
       render(
         <EnvironmentCreationProvider>
@@ -95,13 +105,13 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '高级设置' })).not.toBeInTheDocument();
   });
 
-  test('hides navigation links in Backend logs view', async () => {
-    const router = createTestRouter('/backend-logs'); // Explicitly set path
+
+  test('keeps navigation visible in Jupyter logs view', async () => {
+    const router = createTestRouter('/jupyter-logs');
     await act(async () => {
       render(
         <EnvironmentCreationProvider>
@@ -109,9 +119,21 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '日志' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('keeps navigation visible in Backend logs view', async () => {
+    const router = createTestRouter('/backend-logs');
+    await act(async () => {
+      render(
+        <EnvironmentCreationProvider>
+          <RouterProvider router={router} />
+        </EnvironmentCreationProvider>
+      );
+    });
+    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '日志' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('hides navigation links in Setup view', async () => {
@@ -123,9 +145,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
   });
 
   test('hides navigation links in Installation Progress view', async () => {
@@ -137,8 +157,6 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByText(/Backends/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Environments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/API Keys/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
   });
 });

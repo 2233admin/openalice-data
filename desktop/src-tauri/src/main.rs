@@ -43,6 +43,7 @@ use crate::tauri_handlers::backends::{
     create_backend_service, delete_backend_service, initialize_backends, list_backend_services,
     open_backend_logs_window, start_backend_service, stop_backend_service, update_backend_service,
 };
+use crate::tauri_handlers::studio::inspect_studio_environment;
 
 use crate::utils::certs::generate_self_signed_cert;
 
@@ -399,7 +400,11 @@ fn navigate_to_page<R: Runtime>(app_handle: AppHandle<R>, page: &str) {
         let js = format!(
             r#"
             if (localStorage.getItem('environments-first-load-done') === 'true') {{
-                window.location.href = '{page}';
+                // Keep navigation inside the SPA. A hard reload to a client
+                // route is not guaranteed to resolve through Tauri's asset
+                // protocol and can expose only the native window background.
+                window.history.pushState({{}}, '', '{page}');
+                window.dispatchEvent(new PopStateEvent('popstate'));
             }} else {{
                 console.log('Navigation prevented: environments-first-load-done not set');
             }}
@@ -541,6 +546,7 @@ fn main() {
             update_backend_service,
             create_backend_service,
             delete_backend_service,
+            inspect_studio_environment,
             list_backend_services,
             uninstall_application,
             quit_application,
@@ -673,7 +679,7 @@ fn main() {
                                 if !install_state.is_installed {
                                     tray_handle.dialog().message("The installation appears to be incomplete. To uninstall, quit the application and remove the application from the operating system.").kind(tauri_plugin_dialog::MessageDialogKind::Error).show(|_| {});
                                 } else {
-                                    window.eval("window.location.href = '/uninstall';").unwrap();
+                                    window.eval("window.history.pushState({}, '', '/uninstall'); window.dispatchEvent(new PopStateEvent('popstate'));").unwrap();
                                 }
                             }
                         },
@@ -749,14 +755,6 @@ fn main() {
                         api.prevent_close();
                     }
                 });
-                #[cfg(target_os = "macos")]
-                {
-                    use objc2_app_kit::{NSColor, NSWindow};
-                    let ns_window_ptr = window.ns_window().unwrap();
-                    let ns_window = unsafe { &*(ns_window_ptr as *mut NSWindow) };
-                    let bg_color = NSColor::colorWithRed_green_blue_alpha(0.0, 0.0, 0.0, 1.0);
-                    ns_window.setBackgroundColor(Some(&bg_color));
-                };
             }
 
             let exit_handle = app_handle.handle().clone();
@@ -777,12 +775,11 @@ fn main() {
             }
 
             if !install_state.is_installed {
-                log::info!("Installation is INVALID - showing window and navigating to setup");
+                log::info!("Installation is INVALID - showing window; the client router will navigate to setup");
                 if let Some(window) = handle.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
                     let _ = window.eval("localStorage.clear(); console.log('localStorage cleared due to INVALID installation');");
-                    let _ = window.eval("window.location.href = '/setup'");
                 }
             } else {
                 // VALID INSTALLATION
@@ -800,9 +797,10 @@ fn main() {
 
                     if show_after_update {
                         log::info!("SHOWING WINDOW AFTER UPDATE RESTART");
-                        let _ = window.show();
                     }
-
+                    // Studio is a foreground desktop application. Do not
+                    // leave the user with only the tray icon on launch.
+                    let _ = window.show();
                     let _ = window.set_focus();
                 }
             }

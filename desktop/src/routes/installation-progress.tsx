@@ -1195,13 +1195,6 @@ export default function InstallationProgress() {
 	// Handle completion - continue to app (only for successful installations)
 	const handleContinue = async () => {
 		setIsContinuing(true);
-		// Instead of using navigate, use window.location to force a full page reload
-		// This ensures the installation state is properly recognized
-		const searchParams = new URLSearchParams();
-		if (directory) searchParams.append("directory", directory);
-		if (userDataDir) searchParams.append("userDataDir", userDataDir);
-
-		const queryString = searchParams.toString();
 
 		try {
 			await invoke("update_openbb_settings", {
@@ -1222,31 +1215,32 @@ export default function InstallationProgress() {
 		}
 
 		window.localStorage.setItem("environments-first-load-done", "true");
-		window.location.href = `/environments${queryString ? `?${queryString}` : ""}`;
+		void navigate({
+			to: "/environments",
+			search: { directory, userDataDir },
+		});
 	};
 
 	// Handle "Continue Anyway" when installation has failed
 	// This skips settings updates since the environment may be incomplete
 	const handleContinueAnyway = () => {
 		setIsContinuing(true);
-		const searchParams = new URLSearchParams();
-		if (directory) searchParams.append("directory", directory);
-		if (userDataDir) searchParams.append("userDataDir", userDataDir);
-
-		const queryString = searchParams.toString();
 
 		// Don't update settings or create backend configs for failed installations
 		// Just navigate to environments so user can see what's available
 		console.warn("Continuing after failed installation - settings not updated");
 		window.localStorage.setItem("environments-first-load-done", "true");
-		window.location.href = `/environments${queryString ? `?${queryString}` : ""}`;
+		void navigate({
+			to: "/environments",
+			search: { directory, userDataDir },
+		});
 	};
 
 	// Handle error - try again
 	const handleTryAgain = () => {
 		setPhase("preparing");
 		window.localStorage.clear();
-		window.location.href = "/setup";
+		void navigate({ to: "/setup" });
 	};
 
 	// Handle cancellation

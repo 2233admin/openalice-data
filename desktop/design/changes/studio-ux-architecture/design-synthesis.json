@@ -1,0 +1,59 @@
+{
+  "schema": "design-pipeline.design-synthesis.v1",
+  "changeId": "studio-ux-architecture",
+  "status": "ready-to-implement",
+  "stage": "implementation",
+  "initializedAt": "2026-08-14T18:33:38.798Z",
+  "updatedAt": "2026-08-14T19:19:22.426Z",
+  "artifactRoot": "design/changes/studio-ux-architecture",
+  "projectRoot": "../../..",
+  "problem": "为 OpenBB Studio 设计面向普通用户的数据源接入、业务数据分类、Provider 覆盖比较、公共字段与来源特有字段对齐、查询验证和 OpenBB 基础运行能力的最小用户友好信息架构；优先解决真实用户阻塞点和 ADHD 友好工作流，不做视觉风格设计，不把项目退化为凭证状态面板或后台管理模板。",
+  "inputs": {
+    "mode": "requirements-only",
+    "framework": "react",
+    "references": [],
+    "templates": []
+  },
+  "interaction": {
+    "mode": "human-in-loop",
+    "nextCommand": "Implement from DESIGN.md, change design.md, and tasks.md; then run normal design-pipeline QA.",
+    "message": "All synthesis gates passed. Continue without another interaction pause."
+  },
+  "scope": {
+    "budget": "program",
+    "threshold": 60,
+    "status": "fit",
+    "score": 52,
+    "surprise": false,
+    "counts": {
+      "surfaces": 5,
+      "workflows": 6,
+      "integrations": 3,
+      "unknowns": 6,
+      "decisions": 9
+    }
+  },
+  "wayfinder": {
+    "required": false,
+    "status": "not-required",
+    "mapUrl": null
+  },
+  "output": {
+    "path": "DESIGN.md",
+    "status": "validated",
+    "sha256": "e699c5b203105c760729ca73948583fd0d056ac67c2f517c566459be468c4a7e",
+    "validatedAt": "2026-08-14T19:01:52.860Z"
+  },
+  "evidence": [
+    {
+      "type": "grill",
+      "path": "design/changes/studio-ux-architecture/decisions/grill.md",
+      "recordedAt": "2026-08-14T18:57:51.819Z"
+    },
+    {
+      "type": "design-validation",
+      "path": "DESIGN.md",
+      "recordedAt": "2026-08-14T19:01:52.860Z"
+    }
+  ]
+}

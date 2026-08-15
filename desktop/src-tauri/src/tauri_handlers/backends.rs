@@ -576,6 +576,46 @@ fn remove_ansi_escape_sequences(input: &str) -> String {
     ansi_regex.replace_all(input, "").to_string()
 }
 
+/// Infer a local HTTP endpoint from command-line host and port options.
+fn configured_backend_endpoint(command: &str) -> Option<(String, u16, String)> {
+    fn option_value(command: &str, option: &str) -> Option<String> {
+        let prefix = format!("{option}=");
+        let mut tokens = command.split_whitespace();
+        while let Some(token) = tokens.next() {
+            let token = token.trim_matches(['"', '\'']);
+            if token == option {
+                return tokens
+                    .next()
+                    .map(|value| value.trim_matches(['"', '\'']).to_string());
+            }
+            if let Some(value) = token.strip_prefix(&prefix) {
+                return Some(value.trim_matches(['"', '\'']).to_string());
+            }
+        }
+        None
+    }
+
+    let host = option_value(command, "--host")?;
+    let port = option_value(command, "--port")?.parse::<u16>().ok()?;
+    let url_host = if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]")
+    } else {
+        host.clone()
+    };
+    Some((host, port, format!("http://{url_host}:{port}")))
+}
+
+fn apply_configured_backend_endpoint(backend: &mut BackendService) {
+    if backend.url.is_some() {
+        return;
+    }
+    if let Some((host, port, url)) = configured_backend_endpoint(&backend.command) {
+        backend.host = Some(host);
+        backend.port = Some(port);
+        backend.url = Some(url);
+    }
+}
+
 /// Selects the best URL from a list based on predefined priorities.
 fn select_best_url(urls: &[String], original_log_line: &str) -> Option<String> {
     if urls.is_empty() {
@@ -1180,14 +1220,12 @@ echo "Environment {} activated successfully"
     let final_backend_state;
 
     if let Some(backend_config) = backends.iter_mut().find(|b| b.id == id) {
-        // Update runtime state on the fresh config object
+        // Update runtime state on the fresh config object.
         backend_config.status = BackendStatus::Running.to_string();
         backend_config.pid = Some(process_pid);
         backend_config.started_at = Some(Utc::now().to_rfc3339());
         backend_config.error = None;
-
-        // The host/port/url are discovered asynchronously by the log reader threads.
-        // We do not touch them here.
+        apply_configured_backend_endpoint(backend_config);
 
         final_backend_state = backend_config.clone();
     } else {
@@ -1216,7 +1254,10 @@ pub fn list_backend_services_impl<F: FileSystem, E: EnvSystem>(
     fs: &F,
     env_sys: &E,
 ) -> Result<Vec<BackendService>, String> {
-    let backends = load_backends_config(fs, env_sys).unwrap_or_default();
+    let mut backends = load_backends_config(fs, env_sys).unwrap_or_default();
+    for backend in &mut backends {
+        apply_configured_backend_endpoint(backend);
+    }
 
     Ok(backends)
 }
@@ -1968,6 +2009,54 @@ mod tests {
                 .returning(|_| Command::new("this_command_should_not_exist"));
             assert!(!is_process_running(12345, &mock_env));
         }
+    }
+
+    #[test]
+    fn test_configured_backend_endpoint() {
+        assert_eq!(
+            configured_backend_endpoint("openbb-api --host 127.0.0.1 --port 6900"),
+            Some((
+                "127.0.0.1".to_string(),
+                6900,
+                "http://127.0.0.1:6900".to_string()
+            ))
+        );
+        assert_eq!(
+            configured_backend_endpoint("uvicorn app:api --host=localhost --port=8000"),
+            Some((
+                "localhost".to_string(),
+                8000,
+                "http://localhost:8000".to_string()
+            ))
+        );
+        assert_eq!(
+            configured_backend_endpoint("openbb-mcp --transport streamable-http"),
+            None
+        );
+    }
+
+    #[test]
+    fn test_list_backend_services_infers_configured_endpoint() {
+        let fs = InMemoryFS::new();
+        let mock_env = mock_env();
+        let mut mock_file_ext = MockFileExtTrait::new();
+        mock_file_ext
+            .expect_try_lock_exclusive()
+            .returning(|_| Ok(()));
+        mock_file_ext.expect_unlock().returning(|_| Ok(()));
+
+        let backend = BackendService {
+            name: "OpenBB API".to_string(),
+            command: "openbb-api --host 127.0.0.1 --port 6900".to_string(),
+            environment: "openbb".to_string(),
+            ..Default::default()
+        };
+        let _ = create_backend_service_impl(backend, &fs, &mock_env, &mock_file_ext);
+
+        let backends = list_backend_services_impl(&fs, &mock_env).unwrap();
+        assert_eq!(backends[0].url.as_deref(), Some("http://127.0.0.1:6900"));
+        assert_eq!(backends[0].host.as_deref(), Some("127.0.0.1"));
+        assert_eq!(backends[0].port, Some(6900));
     }
 
     #[test]
