@@ -5,9 +5,9 @@ import { DatasetQueryError, redactQueryParams, runDatasetQuery, type DatasetQuer
 import type { DatasetSummary } from "../studio/contracts";
 import { recordStudioActivity } from "../studio/activity";
 import { StudioPageHeader, StudioPageState } from "../studio/StudioPageState";
+import { StudioLink } from "../studio/StudioLink";
 import { useStudioState } from "../studio/queries";
 import { VirtualResultTable } from "../studio/VirtualResultTable";
-
 const ResultChart = lazy(() => import("../studio/ResultChart"));
 type ResultTab = "table" | "chart" | "raw" | "usage" | "diagnostics";
 
@@ -144,10 +144,10 @@ export function PlaygroundPage() {
           <label className="mt-4 block text-sm">数据源<select className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary p-2" onChange={(event) => { setProviderId(event.target.value); setResult(undefined); setFailure(undefined); }} value={provider}>{availableProviders.map((item) => <option key={item.provider_id} value={item.provider_id}>{item.provider_id} · {item.state}</option>)}</select></label>
           {fields.map((field) => <label className="mt-4 block text-sm" key={field.name}>{field.name}{field.required && " *"}{field.choices?.length ? <select className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary p-2" {...register(field.name, { required: field.required })}><option value="">请选择…</option>{field.choices.map((choice) => <option key={String(choice)} value={String(choice)}>{String(choice)}</option>)}</select> : <input className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary p-2" {...register(field.name, { required: field.required })} />}<span className="mt-1 block text-xs text-theme-muted">{field.type}{field.description ? ` · ${field.description}` : ""}</span></label>)}
           <button className="mt-5 w-full rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" type="submit">运行查询</button>
-          {query.data?.service.state !== "running" && <a className="mt-3 block text-center text-sm text-theme-accent" href="/backends">打开服务管理 →</a>}
+          {query.data?.service.state !== "running" && <StudioLink className="mt-3 block text-center text-sm text-theme-accent" href="/backends">打开服务管理 →</StudioLink>}
         </form>
         <section className="min-w-0 rounded border border-theme-outline bg-theme-primary p-5">
-          {failure && <div className="mb-4 rounded border border-red-400 p-3 text-sm text-red-500" role="alert"><span>{failure.message}</span><span className="mt-1 block text-xs">诊断分类：{failure.diagnosticCategory} · 目标和安全参数已保留，可修复后重试。</span>{recoveryRoute && <a className="mt-2 inline-block text-sm text-theme-accent" href={recoveryRoute}>前往修复 →</a>}</div>}
+          {failure && <div className="mb-4 rounded border border-red-400 p-3 text-sm text-red-500" role="alert"><span>{failure.message}</span><span className="mt-1 block text-xs">诊断分类：{failure.diagnosticCategory} · 目标和安全参数已保留，可修复后重试。</span>{recoveryRoute && <StudioLink className="mt-2 inline-block text-sm text-theme-accent" href={recoveryRoute}>前往修复 →</StudioLink>}</div>}
           {hasOutput && evidence ? <>
             <div className="mb-3 flex items-center justify-between text-xs text-theme-muted"><span>{evidence.target.datasetName ?? evidence.target.datasetId} · {evidence.target.providerId}</span><span>{evidence.completedAt}</span></div>
             <div className="flex gap-1 border-b border-theme-outline">{(["table", "chart", "raw", "usage", "diagnostics"] as ResultTab[]).map((item) => <button className={`px-3 py-2 text-sm capitalize ${tab === item ? "border-b-2 border-theme-accent" : "text-theme-muted"}`} key={item} onClick={() => setTab(item)} type="button">{item}</button>)}</div>

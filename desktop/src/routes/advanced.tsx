@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StudioLink } from "../studio/StudioLink";
 import { StudioPageHeader } from "../studio/StudioPageState";
 
 const advancedGroups = [
@@ -67,14 +68,14 @@ export function AdvancedPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:justify-end">
                     {item.links.map((link) => (
-                      <a
+                      <StudioLink
                         aria-current={active === item.id ? "location" : undefined}
                         className="text-sm text-theme-accent"
                         href={link.route}
                         key={link.label}
                       >
                         {link.label} →
-                      </a>
+                      </StudioLink>
                     ))}
                   </div>
                 </article>

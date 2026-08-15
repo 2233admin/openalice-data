@@ -1,6 +1,7 @@
 import { Button } from "@openbb/ui-pro";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { StudioLink } from "../studio/StudioLink";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { latestProviderActivity, readStudioActivity } from "../studio/activity";
@@ -69,7 +70,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
           <StudioPageHeader
             title={provider.display_name}
             description={`Provider ${provider.id} · OpenBB 报告 ${provider.capability_count} 项数据能力。`}
-            action={<a className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={`/query?provider=${provider.id}`}>运行测试查询</a>}
+            action={<StudioLink className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={`/query?provider=${provider.id}`}>运行测试查询</StudioLink>}
           />
           <nav aria-label="数据源设置" className="mt-5 overflow-x-auto border-b border-theme-outline">
             <div className="flex min-w-max gap-1" role="tablist">
@@ -107,7 +108,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                 </dl>
                 <div className="mt-5 flex flex-wrap gap-4 text-sm">
                   <button className="text-theme-accent" onClick={() => setTab("credentials")} type="button">配置凭证</button>
-                  <a className="text-theme-accent" href={`/query?provider=${provider.id}`}>测试 Provider</a>
+                  <StudioLink className="text-theme-accent" href={`/query?provider=${provider.id}`}>测试 Provider</StudioLink>
                   <button className="text-theme-accent" onClick={() => setTab("capabilities")} type="button">打开数据能力</button>
                 </div>
               </>
@@ -122,7 +123,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                     {provider.capabilities.map((capability) => (
                       <li className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm" key={capability}>
                         <code className="break-all">{capability}</code>
-                        <a className="text-theme-accent" href={`/query?dataset=${encodeURIComponent(capability)}&provider=${encodeURIComponent(provider.id)}`}>打开原生查询</a>
+                        <StudioLink className="text-theme-accent" href={`/query?dataset=${encodeURIComponent(capability)}&provider=${encodeURIComponent(provider.id)}`}>打开原生查询</StudioLink>
                       </li>
                     ))}
                   </ul>
@@ -164,14 +165,14 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                     ))}
                     <div className="flex flex-wrap items-center gap-4">
                       <Button disabled={isSaving} type="submit">{isSaving ? "正在保存…" : "保存凭证"}</Button>
-                      <a className="text-sm text-theme-accent" href={`/query?provider=${provider.id}`}>运行测试查询</a>
+                      <StudioLink className="text-sm text-theme-accent" href={`/query?provider=${provider.id}`}>运行测试查询</StudioLink>
                     </div>
                     <p aria-live="polite" className="text-sm text-theme-muted">{message}</p>
                   </form>
                 ) : credentialMetadataUnknown ? (
                   <div className="mt-4 text-sm">
                     <p className="text-theme-muted">无法确认这个 Provider 是否需要凭证。请在高级凭证页检查 OpenBB Registry 配置。</p>
-                    <a className="mt-3 inline-block text-theme-accent" href="/advanced?section=credentials">打开高级凭证</a>
+                    <StudioLink className="mt-3 inline-block text-theme-accent" href="/advanced?section=credentials">打开高级凭证</StudioLink>
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-theme-muted">OpenBB 明确报告这个 Provider 不需要凭证。</p>
@@ -208,8 +209,8 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                   />
                 </div>
                 <div className="mt-4 flex flex-wrap gap-4 text-sm">
-                  <a className="text-theme-accent" href={`/query?provider=${provider.id}`}>运行测试查询</a>
-                  {query.data?.service.state !== "running" && <a className="text-theme-accent" href={serviceAction?.action_route ?? "/backends"}>处理 OpenBB 服务</a>}
+                  <StudioLink className="text-theme-accent" href={`/query?provider=${provider.id}`}>运行测试查询</StudioLink>
+                  {query.data?.service.state !== "running" && <StudioLink className="text-theme-accent" href={serviceAction?.action_route ?? "/backends"}>处理 OpenBB 服务</StudioLink>}
                 </div>
               </>
             )}
@@ -219,9 +220,9 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                 <h2 className="font-semibold">高级设置</h2>
                 <p className="mt-2 text-sm text-theme-muted">仅在排查问题时使用原有 Desktop 的运行环境、凭证和日志工具。</p>
                 <div className="mt-4 flex flex-wrap gap-4 text-sm">
-                  <a className="text-theme-accent" href="/advanced?section=extensions">底层扩展</a>
-                  <a className="text-theme-accent" href="/advanced?section=credentials">完整凭证</a>
-                  <a className="text-theme-accent" href="/advanced?section=logs">日志</a>
+                  <StudioLink className="text-theme-accent" href="/advanced?section=extensions">底层扩展</StudioLink>
+                  <StudioLink className="text-theme-accent" href="/advanced?section=credentials">完整凭证</StudioLink>
+                  <StudioLink className="text-theme-accent" href="/advanced?section=logs">日志</StudioLink>
                 </div>
               </>
             )}
@@ -237,7 +238,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <Link className="text-theme-accent" to="/data-sources">返回数据源</Link>
-            {query.data?.service.state !== "running" && <a className="text-theme-accent" href={serviceAction?.action_route ?? "/backends"}>处理 OpenBB 服务</a>}
+            {query.data?.service.state !== "running" && <StudioLink className="text-theme-accent" href={serviceAction?.action_route ?? "/backends"}>处理 OpenBB 服务</StudioLink>}
           </div>
         </section>
       )}

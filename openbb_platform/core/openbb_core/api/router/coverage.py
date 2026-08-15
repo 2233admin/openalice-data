@@ -112,7 +112,7 @@ async def get_provider_metadata(
     provider_interface: Annotated[ProviderInterface, Depends(get_provider_interface)],
 ) -> dict[str, list[dict[str, Any]]]:
     """Expose registry credential names and configured flags, never values."""
-    credentials = UserService().default_user_settings.credentials
+    credentials = UserService.read_from_file().credentials
     return {
         provider: [
             {

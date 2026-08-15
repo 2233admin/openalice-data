@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { StudioLink } from "./StudioLink";
 
 export function StudioPageState({
   isPending,
@@ -10,7 +11,7 @@ export function StudioPageState({
   children: ReactNode;
 }) {
   if (isPending) return <div className="flex flex-1 items-center justify-center text-theme-muted">正在读取 OpenBB 运行环境…</div>;
-  if (error) return <div className="m-6 rounded border border-red-400 p-5"><strong>OpenBB 需要处理</strong><p className="mt-2 text-sm text-theme-muted">{error.message}</p><a className="mt-4 inline-block text-theme-accent" href="/advanced?section=runtimes">检查运行环境</a></div>;
+  if (error) return <div className="m-6 rounded border border-red-400 p-5"><strong>OpenBB 需要处理</strong><p className="mt-2 text-sm text-theme-muted">{error.message}</p><StudioLink className="mt-4 inline-block text-theme-accent" href="/advanced?section=runtimes">检查运行环境</StudioLink></div>;
   return children;
 }
 

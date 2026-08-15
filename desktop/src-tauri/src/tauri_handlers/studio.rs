@@ -1,6 +1,6 @@
 use chrono::Utc;
 use reqwest::Client;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use std::collections::{HashMap, HashSet};
 
 fn api_path(path: &str) -> String {
@@ -440,11 +440,30 @@ async fn fetch_optional_json(client: &Client, base_url: &str, path: &str) -> Opt
     fetch_json(client, base_url, path).await.ok()
 }
 
+fn resolved_api_base_url(requested: Option<&str>) -> String {
+    requested
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+        .or_else(|| {
+            std::env::var("OPENBB_STUDIO_API_URL")
+                .ok()
+                .filter(|value| !value.trim().is_empty())
+        })
+        .or_else(|| {
+            std::env::var("OPENBB_API_URL")
+                .ok()
+                .filter(|value| !value.trim().is_empty())
+        })
+        .unwrap_or_else(|| "http://127.0.0.1:6900".to_string())
+}
+
 #[tauri::command]
-pub async fn inspect_studio_environment(environment: String) -> Result<Value, String> {
-    let base_url = std::env::var("OPENBB_STUDIO_API_URL")
-        .or_else(|_| std::env::var("OPENBB_API_URL"))
-        .unwrap_or_else(|_| "http://127.0.0.1:6900".to_string());
+pub async fn inspect_studio_environment(
+    environment: String,
+    base_url: Option<String>,
+) -> Result<Value, String> {
+    let base_url = resolved_api_base_url(base_url.as_deref());
     let client = Client::new();
     let openapi = fetch_json(&client, &base_url, "/openapi.json").await?;
     let providers = fetch_json(&client, &base_url, "/api/v1/coverage/providers").await?;
@@ -558,6 +577,18 @@ pub async fn inspect_studio_environment(environment: String) -> Result<Value, St
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn prefers_configured_backend_url_for_inspection() {
+        assert_eq!(
+            resolved_api_base_url(Some("http://127.0.0.1:7900")),
+            "http://127.0.0.1:7900"
+        );
+        assert_eq!(
+            resolved_api_base_url(Some("  http://127.0.0.1:7901/  ")),
+            "http://127.0.0.1:7901/"
+        );
+    }
 
     #[test]
     fn extracts_declared_response_fields_without_guessing() {

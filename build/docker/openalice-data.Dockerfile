@@ -9,6 +9,7 @@ WORKDIR /opt/openalice
 COPY openbb_platform /opt/openalice/openbb_platform
 
 RUN python -m pip install \
+      /opt/openalice/openbb_platform/core \
       "/opt/openalice/openbb_platform[all]" \
       /opt/openalice/openbb_platform/providers/ashare \
     && groupadd --system openalice \

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { BackendService } from "../studio/client";
+import { StudioLink } from "../studio/StudioLink";
 import { readStudioActivity } from "../studio/activity";
 import { ServiceStartAction } from "../studio/ServiceStartAction";
 import { useStudioState } from "../studio/queries";
@@ -94,7 +95,7 @@ function HomePage() {
         <h1 className="mt-2 text-2xl font-semibold">先恢复 OpenBB 运行环境</h1>
         <p className="mt-2 text-sm text-theme-muted">{error instanceof Error ? error.message : "当前无法读取 OpenBB；检查运行环境后可以返回重试。"}</p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <a className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={actionRoute}>检查运行环境</a>
+          <StudioLink className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={actionRoute}>检查运行环境</StudioLink>
           <button className="button-outline px-4 py-2 text-sm" type="button" onClick={() => void refetch()}>重新检查</button>
         </div>
       </section>
@@ -167,9 +168,9 @@ function HomePage() {
               onStarted={refetch}
             />
           ) : (
-            <a className="shrink-0 rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={primaryAction.action_route}>
+            <StudioLink className="shrink-0 rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={primaryAction.action_route}>
               {primaryAction.action_label}
-            </a>
+            </StudioLink>
           )}
         </div>
       </section>
@@ -189,7 +190,7 @@ function HomePage() {
               <h2 className="mt-1 font-semibold" id="openbb-services-heading">OpenBB 服务</h2>
               <p className="mt-2 text-sm text-theme-muted">决定当前运行环境启动哪些 OpenBB 服务。</p>
             </div>
-            <a className="shrink-0 text-sm text-theme-accent" href="/backends">打开服务管理 →</a>
+            <StudioLink className="shrink-0 text-sm text-theme-accent" href="/backends">打开服务管理 →</StudioLink>
           </div>
           {openbbBackends.length ? (
             <ul className="mt-5 divide-y divide-theme-outline">
@@ -207,7 +208,7 @@ function HomePage() {
           <p className="text-xs font-medium text-theme-muted">默认运行环境</p>
           <h2 className="mt-1 font-semibold" id="runtime-heading">{data.runtime}</h2>
           <p className="mt-1 text-sm text-theme-muted">数据源、查询和扩展默认使用这个运行环境。</p>
-          <a className="mt-4 inline-block text-sm text-theme-accent" href="/environments">打开运行环境 →</a>
+          <StudioLink className="mt-4 inline-block text-sm text-theme-accent" href="/environments">打开运行环境 →</StudioLink>
         </section>
       </div>
 
@@ -215,7 +216,7 @@ function HomePage() {
         <section aria-labelledby="action-items-heading">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="font-semibold" id="action-items-heading">其他待处理事项</h2>
-            <a className="text-sm text-theme-accent" href="/data-sources">查看数据源</a>
+            <StudioLink className="text-sm text-theme-accent" href="/data-sources">查看数据源</StudioLink>
           </div>
           <div className="mt-3 divide-y divide-theme-outline border-y border-theme-outline">
             {additionalActions.slice(0, 5).map((action) => (
@@ -226,7 +227,7 @@ function HomePage() {
                     <p className="mt-1 text-sm text-theme-muted">{action.description}</p>
                     {action.entity_id && <p className="mt-2 text-xs text-theme-muted">{entityLabels[action.entity_type]} · {action.entity_id}</p>}
                   </div>
-                  {action.action_route && <a className="shrink-0 text-sm text-theme-accent" href={action.action_route}>{action.action_label}</a>}
+                  {action.action_route && <StudioLink className="shrink-0 text-sm text-theme-accent" href={action.action_route}>{action.action_label}</StudioLink>}
                 </div>
               </article>
             ))}
@@ -239,12 +240,12 @@ function HomePage() {
         <section aria-labelledby="recent-activity-heading">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="font-semibold" id="recent-activity-heading">最近活动</h2>
-            <a className="text-sm text-theme-accent" href="/query">打开查询</a>
+            <StudioLink className="text-sm text-theme-accent" href="/query">打开查询</StudioLink>
           </div>
           <ul className="mt-3 divide-y divide-theme-outline border-y border-theme-outline">
             {activity.slice(0, 5).map((entry) => (
               <li key={`${entry.at}:${entry.providerId}:${entry.datasetId}`}>
-                <a
+                <StudioLink
                   className="grid gap-1 py-4 hover:bg-theme-secondary sm:grid-cols-[minmax(0,1fr)_auto]"
                   href={`/query?dataset=${encodeURIComponent(entry.datasetId)}&provider=${encodeURIComponent(entry.providerId)}`}
                 >
@@ -256,7 +257,7 @@ function HomePage() {
                     {entry.succeeded && entry.rowCount !== undefined ? `${entry.rowCount} 行 · ` : ""}
                     <time dateTime={entry.at}>{new Date(entry.at).toLocaleString("zh-CN")}</time>
                   </span>
-                </a>
+                </StudioLink>
               </li>
             ))}
             {activity.length === 0 && (

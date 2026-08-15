@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { StudioLink } from "../studio/StudioLink";
 import { StudioPageHeader } from "../studio/StudioPageState";
 
 const logEntries = [
@@ -23,13 +24,13 @@ export function DiagnosticsPage() {
       />
       <section className="mt-6 divide-y divide-theme-outline rounded border border-theme-outline bg-theme-primary" aria-label="日志入口">
         {logEntries.map((entry) => (
-          <a className="flex items-center justify-between gap-4 p-5 hover:bg-theme-secondary" href={entry.route} key={entry.route}>
+          <StudioLink className="flex items-center justify-between gap-4 p-5 hover:bg-theme-secondary" href={entry.route} key={entry.route}>
             <span>
               <strong className="block font-medium">{entry.title}</strong>
               <span className="mt-1 block text-sm text-theme-muted">{entry.description}</span>
             </span>
             <span className="shrink-0 text-sm text-theme-accent">打开 →</span>
-          </a>
+          </StudioLink>
         ))}
       </section>
     </div>

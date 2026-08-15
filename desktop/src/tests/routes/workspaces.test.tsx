@@ -48,6 +48,12 @@ describe("workspace routes", () => {
     expect(screen.getByTestId("workspace-empty-state")).toHaveTextContent("先创建一个工作区");
   });
 
+  it("links each workspace to its concrete detail route", () => {
+    const workspace = createWorkspace("Prices");
+    render(<WorkspacesPage />);
+    expect(screen.getByRole("link", { name: "Prices" })).toHaveAttribute("href", `/workspaces/${workspace.id}`);
+  });
+
   it("requires an explicit Provider/dataset choice before attaching", async () => {
     const workspace = createWorkspace("Prices");
     render(<WorkspaceDetailPage workspaceId={workspace.id} />);

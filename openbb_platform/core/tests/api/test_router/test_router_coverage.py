@@ -56,7 +56,7 @@ def test_get_provider_metadata_redacts_secret_values():
         )
     )
     with patch("openbb_core.api.router.coverage.UserService") as user_service:
-        user_service.return_value.default_user_settings = settings
+        user_service.read_from_file.return_value = settings
         response = asyncio.run(get_provider_metadata(provider_interface))
 
     assert response == {

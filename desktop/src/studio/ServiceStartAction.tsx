@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { startStudioService } from "./client";
+import { StudioLink } from "./StudioLink";
+import { startStudioService, waitForStudioService } from "./client";
 
 interface ServiceStartActionProps {
   backendId?: string;
@@ -20,14 +21,15 @@ export function ServiceStartAction({
   const [error, setError] = useState<string | null>(null);
 
   if (!backendId) {
-    return <a className={className} href={href}>{label}</a>;
+    return <StudioLink className={className} href={href}>{label}</StudioLink>;
   }
 
   const handleStart = async () => {
     setIsStarting(true);
     setError(null);
     try {
-      await startStudioService(backendId);
+      const started = await startStudioService(backendId);
+      await waitForStudioService(started);
       await onStarted?.();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));

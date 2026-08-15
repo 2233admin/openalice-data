@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { StudioLink } from "../studio/StudioLink";
 const PROVIDER_CATALOG_URL = "https://raw.githubusercontent.com/OpenBB-finance/OpenBB/main/assets/extensions/provider.json";
 
 export interface DataSourceCatalogEntry {
@@ -104,7 +105,7 @@ export function AddDataSourceSelector({ installedPackages, onInstallProvider }: 
         {message && (
           <>
             <p className="mt-4 text-sm text-theme-accent" role="status">{message}</p>
-            <p className="mt-2 text-sm text-theme-muted"><a className="text-theme-accent" href="/backends">前往服务管理重启 OpenBB 服务 →</a></p>
+            <p className="mt-2 text-sm text-theme-muted"><StudioLink className="text-theme-accent" href="/backends">前往服务管理重启 OpenBB 服务 →</StudioLink></p>
           </>
         )}
         {error && <p className="mt-4 text-sm text-theme-danger" role="alert">{error}</p>}

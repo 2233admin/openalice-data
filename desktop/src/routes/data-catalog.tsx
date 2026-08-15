@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import type { DatasetSummary } from "../studio/contracts";
+import { StudioLink } from "../studio/StudioLink";
 import { latestDatasetSuccess, readStudioActivity } from "../studio/activity";
 import { StatusPill, StudioPageHeader, StudioPageState } from "../studio/StudioPageState";
 import { useStudioState } from "../studio/queries";
@@ -35,7 +36,7 @@ const columns = [
       <ul className="space-y-2">
         {info.getValue().map((provider) => (
           <li className="flex flex-wrap items-center gap-2" key={provider.provider_id}>
-            <a className="text-theme-accent" href={`/data-sources/${encodeURIComponent(provider.provider_id)}`}>{provider.provider_id}</a>
+            <StudioLink className="text-theme-accent" href={`/data-sources/${encodeURIComponent(provider.provider_id)}`}>{provider.provider_id}</StudioLink>
             <StatusPill value={provider.state} />
             {provider.state_description && <span className="text-xs text-theme-muted">{provider.state_description}</span>}
           </li>
@@ -98,13 +99,13 @@ const columns = [
     cell: (info) => (
       <div className="flex min-w-32 flex-col items-start gap-2">
         {info.row.original.providers.map((provider) => (
-          <a
+          <StudioLink
             className="text-theme-accent"
             href={`/query?dataset=${encodeURIComponent(info.row.original.id)}&provider=${encodeURIComponent(provider.provider_id)}`}
             key={provider.provider_id}
           >
             用 {provider.provider_id} 查询
-          </a>
+          </StudioLink>
         ))}
       </div>
     ),
@@ -134,7 +135,7 @@ export function DataCatalogPage() {
         <StudioPageHeader
           title="数据目录"
           description="浏览当前 OpenBB 实时报告的原生数据集、标准模型、字段 schema 和 Provider 覆盖。"
-          action={<a className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href="/query">开始查询</a>}
+          action={<StudioLink className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href="/query">开始查询</StudioLink>}
         />
         {snapshot && (
           <section className="mt-5 flex flex-wrap items-center gap-4 rounded border border-theme-outline bg-theme-primary p-4" aria-label="OpenBB 目录检查状态">
@@ -149,7 +150,7 @@ export function DataCatalogPage() {
               </p>
             </div>
             {snapshot.freshness.status === "not_inspected" && serviceAction?.action_route && (
-              <a className="text-sm text-theme-accent" href={serviceAction.action_route}>{serviceAction.action_label}</a>
+              <StudioLink className="text-sm text-theme-accent" href={serviceAction.action_route}>{serviceAction.action_label}</StudioLink>
             )}
           </section>
         )}
@@ -204,7 +205,7 @@ export function DataCatalogPage() {
                   ? "OpenBB 服务已停止。启动后会从 coverage 和 OpenAPI 读取原生目录。"
                   : "当前没有可显示的实时目录数据。"}
             </p>
-            {serviceAction?.action_route && <a className="mt-4 inline-block text-sm text-theme-accent" href={serviceAction.action_route}>处理 OpenBB 服务</a>}
+            {serviceAction?.action_route && <StudioLink className="mt-4 inline-block text-sm text-theme-accent" href={serviceAction.action_route}>处理 OpenBB 服务</StudioLink>}
           </section>
         )}
       </div>

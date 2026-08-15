@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadStudioState, type Invoke } from "../../studio/client";
+import { loadStudioState, waitForStudioService, type Invoke } from "../../studio/client";
 
 const snapshot = {
   providers: [], datasets: [], actions: [], fetched_at: "2026-08-14T00:00:00+00:00",
@@ -11,7 +11,7 @@ describe("loadStudioState", () => {
       if (command === "list_backend_services") return [
         { id: "other", name: "Custom worker", environment: "unrelated", status: "running", url: "http://127.0.0.1:7000" },
         { id: "mcp", name: "OpenBB MCP", command: "openbb-mcp", environment: "research", status: "running", url: "http://127.0.0.1:6901" },
-        { id: "api", name: "OpenBB API", command: "openbb-api", environment: "research", status: "running", url: "http://127.0.0.1:6900" },
+        { id: "api", name: "OpenBB API", command: "openbb-api", environment: "research", status: "running", url: "http://127.0.0.1:7900" },
       ];
       if (command === "list_conda_environments") return [{ name: "openbb" }, { name: "research" }];
       if (command === "inspect_studio_environment") return snapshot;
@@ -21,10 +21,30 @@ describe("loadStudioState", () => {
 
     const state = await loadStudioState(invoke as unknown as Invoke);
 
-    expect(invoke).toHaveBeenCalledWith("inspect_studio_environment", { environment: "research" });
+    expect(invoke).toHaveBeenCalledWith("inspect_studio_environment", { environment: "research", base_url: "http://127.0.0.1:7900" });
     expect(state.runtime).toBe("research");
     expect(state.service.state).toBe("running");
     expect(state.backends?.map((backend) => backend.id)).toEqual(["mcp", "api"]);
+  });
+
+  it("does not treat an unrelated Uvicorn backend as the OpenBB API", async () => {
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "list_backend_services") return [{
+        id: "not-openbb",
+        name: "Notebook server",
+        command: "uvicorn notebook:app",
+        environment: "research",
+        status: "running",
+        url: "http://127.0.0.1:7900",
+      }];
+      if (command === "list_conda_environments") return [{ name: "openbb" }, { name: "research" }];
+      throw new Error(`Unexpected command: ${command}`);
+    });
+
+    const state = await loadStudioState(invoke as unknown as Invoke);
+    expect(state.runtime).toBe("openbb");
+    expect(state.service.state).toBe("stopped");
+    expect(invoke).not.toHaveBeenCalledWith("inspect_studio_environment", expect.anything());
   });
 
   it("falls back to the managed openbb runtime without inventing provider data", async () => {
@@ -119,4 +139,20 @@ describe("loadStudioState", () => {
       context: { runtime: "openbb", serviceState: "running", backendId: "api" },
     });
   });
+});
+
+it("waits for OpenBB coverage readiness before refreshing Studio state", async () => {
+  const statuses = [503, 503, 200, 200];
+  const fetcher = vi.fn(async () => new Response(null, { status: statuses.shift() ?? 200 }));
+
+  await waitForStudioService(
+    { id: "api", name: "OpenBB API", command: "openbb-api", environment: "openbb", status: "running", url: "http://127.0.0.1:6900/" },
+    fetcher,
+    100,
+    0,
+  );
+
+  expect(fetcher).toHaveBeenCalledWith("http://127.0.0.1:6900/openapi.json");
+  expect(fetcher).toHaveBeenCalledWith("http://127.0.0.1:6900/api/v1/coverage/providers");
+  expect(fetcher).toHaveBeenCalledTimes(4);
 });

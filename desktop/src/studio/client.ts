@@ -88,7 +88,12 @@ function emptySnapshot(service: StudioServiceState, runtime: string): StudioSnap
 
 function isOpenBbBackend(candidate: BackendService): boolean {
   const identity = `${candidate.name} ${candidate.command ?? ""}`.toLowerCase();
-  return identity.includes("openbb") || identity.includes("uvicorn");
+  return identity.includes("openbb");
+}
+
+function isOpenBbApiBackend(candidate: BackendService): boolean {
+  const identity = `${candidate.name} ${candidate.command ?? ""}`.toLowerCase();
+  return identity.includes("openbb api") || identity.includes("openbb-api");
 }
 
 function selectRuntime(backends: BackendService[], runtimes: Runtime[]): {
@@ -96,10 +101,7 @@ function selectRuntime(backends: BackendService[], runtimes: Runtime[]): {
   runtime?: string;
 } {
   const openbbBackends = backends.filter(isOpenBbBackend);
-  const backend = openbbBackends.find((candidate) => {
-    const identity = `${candidate.name} ${candidate.command ?? ""}`.toLowerCase();
-    return identity.includes("openbb api") || identity.includes("openbb-api") || identity.includes("uvicorn");
-  }) ?? openbbBackends[0];
+  const backend = openbbBackends.find(isOpenBbApiBackend);
   const runtimeNames = new Set(runtimes.map((candidate) => candidate.name));
   const backendRuntime = backend?.environment && runtimeNames.has(backend.environment)
     ? backend.environment
@@ -152,7 +154,10 @@ export async function loadStudioState(invoke: Invoke = tauriInvoke): Promise<Stu
 
   try {
     const [rawSnapshot, extensionResult] = await Promise.all([
-      invoke<unknown>("inspect_studio_environment", { environment: selection.runtime }),
+      invoke<unknown>("inspect_studio_environment", {
+        environment: selection.runtime,
+        base_url: backend?.url,
+      }),
       invoke<{ extensions: InstalledExtension[] }>("get_environment_extensions", { name: selection.runtime }),
     ]);
     const snapshot = studioSnapshotSchema.parse(rawSnapshot);
@@ -183,4 +188,36 @@ export async function startStudioService(
   invoke: Invoke = tauriInvoke,
 ): Promise<BackendService> {
   return invoke<BackendService>("start_backend_service", { id: backendId });
+}
+
+export async function waitForStudioService(
+  backend: BackendService,
+  fetcher: typeof fetch = fetch,
+  timeoutMs = 15_000,
+  intervalMs = 250,
+): Promise<void> {
+  if (!backend.url) return;
+  const baseUrl = backend.url.replace(/\/+$/, "");
+  const deadline = Date.now() + timeoutMs;
+  let lastFailure = "OpenBB service did not become ready.";
+
+  while (true) {
+    try {
+      const [openapi, providers] = await Promise.all([
+        fetcher(`${baseUrl}/openapi.json`),
+        fetcher(`${baseUrl}/api/v1/coverage/providers`),
+      ]);
+      if (openapi.ok && providers.ok) return;
+      lastFailure = `OpenBB service readiness returned ${openapi.status}/${providers.status}.`;
+    } catch (cause) {
+      lastFailure = cause instanceof Error ? cause.message : String(cause);
+    }
+
+    if (Date.now() >= deadline) {
+      throw new Error(lastFailure);
+    }
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, intervalMs);
+    });
+  }
 }

@@ -1516,8 +1516,9 @@ dependencies:
       - jupyterlab-latex
       - "anywidget[dev]"
       - ipywidgets
-      - "openbb[all] @ git+https://github.com/2233admin/openalice-data.git@main#subdirectory=openbb_platform"
-      - "openalice-ashare-provider @ git+https://github.com/2233admin/openalice-data.git@main#subdirectory=openbb_platform/providers/ashare"
+      - "openbb-core @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/core"
+      - "openbb[all] @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform"
+      - "openalice-ashare-provider @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/providers/ashare"
 "#
     );
 
@@ -1793,10 +1794,10 @@ mod tests {
         assert!(content.contains("python=3.10"));
         // Runtime toolchain components must be explicit pip entries, not transitive deps
         assert!(content.contains("\n      - jupyterlab\n"));
-        assert!(content.contains("openbb[all]"));
-        assert!(content.contains("subdirectory=openbb_platform\""));
-        assert!(content.contains("openalice-ashare-provider"));
-        assert!(content.contains("subdirectory=openbb_platform/providers/ashare"));
+        assert!(content.contains("openbb-core @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/core"));
+        assert!(content.contains("openbb[all] @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform"));
+        assert!(content.contains("openalice-ashare-provider @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/providers/ashare"));
+        assert!(!content.contains("git+https://"));
         assert!(content.contains("jupyterlab-lsp"));
     }
 
