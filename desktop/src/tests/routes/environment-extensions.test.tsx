@@ -36,6 +36,9 @@ describe("Environment and Extensions surface", () => {
     expect(screen.getByRole("tab", { name: "服务" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "扩展" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "openbb" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "环境" }));
+    expect(screen.getByRole("heading", { name: "已安装环境" })).toBeInTheDocument();
+    expect(screen.getByText("OpenBB 默认环境")).toBeInTheDocument();
   });
 
   it("creates a grouped startup plan without exposing service configuration fields", () => {

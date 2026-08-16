@@ -362,7 +362,7 @@ function ExtensionsPanel({ environment }: { environment: string }) {
   return <section aria-labelledby="extensions-heading"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold" id="extensions-heading">扩展</h2><button className="rounded bg-theme-accent px-3 py-2 text-sm text-theme-primary-inverse" onClick={() => setAdding(true)} type="button">添加扩展</button></div>{message && <p className="mt-3 text-sm text-theme-accent" role="status">{message}</p>}<div className="mt-4 divide-y divide-theme-outline border-y border-theme-outline"><div className="flex items-center justify-between py-3"><div><strong>OpenBB 标准扩展</strong><p className="mt-1 text-xs text-theme-muted">系统组件</p></div><span className="text-xs text-theme-muted">内置</span></div>{visible.map((extension) => <div className="flex flex-wrap items-center justify-between gap-3 py-3" key={`${extension.package}:${extension.version}`}><div><strong>{extensionDisplayName(extension)}</strong><span className="ml-2 text-xs text-theme-muted">{extension.version}</span><p className="mt-1 text-xs text-theme-muted">{extension.role === "notebook" ? "Notebook" : "前端"}</p></div>{extension.role === "notebook" ? <div className="flex flex-wrap gap-3 text-sm">{notebookStatus === "running" ? <button className="text-theme-accent" onClick={() => void openNotebook()} type="button">打开</button> : <button className="text-theme-accent" disabled={notebookStatus === "starting" || notebookStatus === "stopping"} onClick={() => void startNotebook()} type="button">启动</button>}{notebookStatus === "running" && <button className="text-theme-accent" onClick={() => void stopNotebook()} type="button">停止</button>}<button className="text-theme-muted" onClick={() => void openNotebookLogs()} type="button">日志</button><button className="text-theme-accent" onClick={() => void update(extension)} type="button">更新</button><button className="text-theme-danger" onClick={() => void remove(extension)} type="button">删除</button></div> : <div className="flex gap-3 text-sm"><button className="text-theme-accent" onClick={() => void update(extension)} type="button">更新</button><button className="text-theme-danger" onClick={() => void remove(extension)} type="button">删除</button></div>}</div>)}{visible.length === 0 && <p className="py-4 text-sm text-theme-muted">当前环境没有已声明角色的扩展。</p>}</div>{adding && <AddExtensionSelector excludeCategories={["provider", "router", "other-openbb"]} installedPackages={new Set(extensions.map((extension) => extension.package.toLowerCase()))} onCancel={() => setAdding(false)} onInstallExtensions={(ids) => void install(ids)} />}</section>;
 }
 
-function EnvironmentPanel({ environment, runtimes, onEnvironmentChange, refresh }: { environment: string; runtimes: { name: string }[]; onEnvironmentChange: (name: string) => void; refresh: () => Promise<unknown> }) {
+function EnvironmentPanel({ environment, runtimes, onEnvironmentChange, refresh }: { environment: string; runtimes: { name: string; pythonVersion?: string }[]; onEnvironmentChange: (name: string) => void; refresh: () => Promise<unknown> }) {
   const [installDirectory, setInstallDirectory] = useState("");
   const [newName, setNewName] = useState("");
   const [pythonVersion, setPythonVersion] = useState("3.11");
@@ -435,7 +435,51 @@ function EnvironmentPanel({ environment, runtimes, onEnvironmentChange, refresh 
     }
   }
 
-  return <section aria-labelledby="environment-heading"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold" id="environment-heading">环境管理</h2><div className="flex gap-2"><button className="text-theme-accent text-sm" onClick={() => void update()} type="button">更新环境</button><button className="text-theme-danger text-sm" onClick={() => void remove()} type="button">删除环境</button></div></div>{message && <p className="mt-3 text-sm text-theme-accent" role="status">{message}</p>}<div className="mt-4 grid gap-3 rounded border border-theme-outline p-4 md:grid-cols-2"><label className="text-sm">环境名称<input className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary px-3 py-2" onChange={(event) => setNewName(event.target.value)} value={newName} /></label><label className="text-sm">Python 版本<input className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary px-3 py-2" onChange={(event) => setPythonVersion(event.target.value)} value={pythonVersion} /></label><div className="flex items-end gap-2"><button className="rounded bg-theme-accent px-3 py-2 text-sm text-theme-primary-inverse" disabled={!newName.trim() || !installDirectory} onClick={() => void create()} type="button">创建环境</button></div><div className="flex items-end gap-2"><button className="rounded border border-theme-outline px-3 py-2 text-sm" onClick={() => void chooseImportFile()} type="button">选择导入文件</button><button className="rounded bg-theme-accent px-3 py-2 text-sm text-theme-primary-inverse" disabled={!newName.trim() || !importPath || !installDirectory} onClick={() => void importEnvironment()} type="button">导入环境</button></div>{importPath && <p className="text-xs text-theme-muted md:col-span-2">{importPath}</p>}</div></section>;
+  return (
+    <section aria-labelledby="environment-heading">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-semibold" id="environment-heading">环境管理</h2>
+        <div className="flex gap-3">
+          <button className="text-theme-accent text-sm" onClick={() => void update()} type="button">更新环境</button>
+          <button className="text-theme-danger text-sm" onClick={() => void remove()} type="button">删除环境</button>
+        </div>
+      </div>
+      {message && <p className="mt-3 text-sm text-theme-accent" role="status">{message}</p>}
+      <section aria-label="已安装环境" className="mt-4 divide-y divide-theme-outline rounded border border-theme-outline">
+        <div className="px-4 py-3">
+          <h3 className="text-sm font-semibold">已安装环境</h3>
+          <p className="mt-1 text-xs text-theme-muted">沿用 ODP 受管 Conda 环境；选择环境后管理其扩展和服务。</p>
+        </div>
+        {runtimes.map((runtime) => {
+          const isCurrent = runtime.name === environment;
+          const isDefault = isOpenBbRuntime(runtime.name);
+          return (
+            <button
+              aria-pressed={isCurrent}
+              className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left ${isCurrent ? "bg-theme-tertiary" : "hover:bg-theme-secondary"}`}
+              key={runtime.name}
+              onClick={() => onEnvironmentChange(runtime.name)}
+              type="button"
+            >
+              <span className="min-w-0">
+                <strong className="block truncate">{isDefault ? "OpenBB 默认环境" : runtime.name}</strong>
+                <span className="mt-1 block text-xs text-theme-muted">{runtime.name}{runtime.pythonVersion ? ` · Python ${runtime.pythonVersion}` : ""}</span>
+              </span>
+              <span className="shrink-0 text-xs text-theme-muted">{isCurrent ? "当前使用" : "选择"}</span>
+            </button>
+          );
+        })}
+        {runtimes.length === 0 && <p className="px-4 py-4 text-sm text-theme-muted">暂未发现受管环境。</p>}
+      </section>
+      <div className="mt-4 grid gap-3 rounded border border-theme-outline p-4 md:grid-cols-2">
+        <label className="text-sm">环境名称<input className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary px-3 py-2" onChange={(event) => setNewName(event.target.value)} value={newName} /></label>
+        <label className="text-sm">Python 版本<input className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary px-3 py-2" onChange={(event) => setPythonVersion(event.target.value)} value={pythonVersion} /></label>
+        <div className="flex items-end gap-2"><button className="rounded bg-theme-accent px-3 py-2 text-sm text-theme-primary-inverse" disabled={!newName.trim() || !installDirectory} onClick={() => void create()} type="button">创建环境</button></div>
+        <div className="flex items-end gap-2"><button className="rounded border border-theme-outline px-3 py-2 text-sm" onClick={() => void chooseImportFile()} type="button">选择导入文件</button><button className="rounded bg-theme-accent px-3 py-2 text-sm text-theme-primary-inverse" disabled={!newName.trim() || !importPath || !installDirectory} onClick={() => void importEnvironment()} type="button">导入环境</button></div>
+        {importPath && <p className="text-xs text-theme-muted md:col-span-2">{importPath}</p>}
+      </div>
+    </section>
+  );
 }
 
 export function EnvironmentExtensionsPage() {
