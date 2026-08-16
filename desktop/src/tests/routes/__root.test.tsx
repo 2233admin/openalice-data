@@ -38,12 +38,12 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 describe('Root Route', () => {
-  const createTestRouter = (initialPath = '/') => {
+  const createTestRouter = (initialPath = '/', searchStr = '') => {
     vi.mocked(useRouter).mockReturnValue({
       state: { location: { pathname: initialPath } },
       navigate: vi.fn(),
     } as never);
-    vi.mocked(useLocation).mockReturnValue({ pathname: initialPath } as never);
+    vi.mocked(useLocation).mockReturnValue({ pathname: initialPath, searchStr } as never);
 
     const router = createRouter({
       routeTree: Route,
@@ -88,11 +88,12 @@ describe('Root Route', () => {
 
     const navigation = screen.getByRole('navigation', { name: '主导航' });
     const links = Array.from(navigation.querySelectorAll('a'));
-    expect(links.map((link) => link.textContent)).toEqual(['首页', '工作区', '数据源', '查询', '扩展', '日志']);
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/home', '/workspaces', '/data-sources', '/query', '/extensions', '/diagnostics']);
+    expect(links.map((link) => link.textContent)).toEqual(['首页', '数据源', '扩展', 'Backends', 'Environments', 'API Keys', 'Jupyter', 'Logs']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/home', '/data-sources', '/extensions', '/backends', '/environments', '/api-keys', '/environments?section=jupyter', '/diagnostics']);
     expect(screen.getByRole('link', { name: '首页' })).toHaveAttribute('aria-current', 'page');
-    for (const infrastructureLabel of ['服务', '运行环境', 'API 凭证', '数据目录']) {
-      expect(screen.queryByRole('link', { name: infrastructureLabel })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'ODP' })).toBeInTheDocument();
+    for (const legacyLabel of ['查询', '维护', '工作区', '数据目录']) {
+      expect(screen.queryByRole('link', { name: legacyLabel })).not.toBeInTheDocument();
     }
   });
 
@@ -109,6 +110,19 @@ describe('Root Route', () => {
     expect(screen.queryByRole('link', { name: '高级设置' })).not.toBeInTheDocument();
   });
 
+  test('distinguishes the Jupyter control entry from the Environments entry', async () => {
+    const router = createTestRouter('/environments', '?section=jupyter');
+    await act(async () => {
+      render(
+        <EnvironmentCreationProvider>
+          <RouterProvider router={router} />
+        </EnvironmentCreationProvider>
+      );
+    });
+    expect(screen.getByRole('link', { name: 'Jupyter' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Environments' })).not.toHaveAttribute('aria-current');
+  });
+
 
   test('keeps navigation visible in Jupyter logs view', async () => {
     const router = createTestRouter('/jupyter-logs');
@@ -120,7 +134,7 @@ describe('Root Route', () => {
       );
     });
     expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '日志' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Logs' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('keeps navigation visible in Backend logs view', async () => {
@@ -133,7 +147,7 @@ describe('Root Route', () => {
       );
     });
     expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '日志' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Backends' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('hides navigation links in Setup view', async () => {

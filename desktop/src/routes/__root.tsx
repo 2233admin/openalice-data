@@ -6,23 +6,28 @@ import { EnvironmentCreationProvider, useEnvironmentCreation } from "../contexts
 
 export const Route = createRootRoute({ component: RootWithProvider });
 
-const normalNavigation = [
+const openAliceNavigation = [
 	{ to: "/home", label: "首页" },
-	{ to: "/workspaces", label: "工作区" },
 	{ to: "/data-sources", label: "数据源" },
-	{ to: "/query", label: "查询" },
-	{ to: "/extensions", label: "扩展" },
-	{ to: "/diagnostics", label: "日志" },
+] as const;
+
+const odpNavigation = [
+	{ to: "/backends", label: "Backends", activeKey: "/backends" },
+	{ to: "/environments", label: "Environments", activeKey: "/environments" },
+	{ to: "/api-keys", label: "API Keys", activeKey: "/api-keys" },
+	{ to: "/environments?section=jupyter", label: "Jupyter", activeKey: "/jupyter" },
+	{ to: "/diagnostics", label: "Logs", activeKey: "/diagnostics" },
 ] as const;
 
 
-function activeIntent(pathname: string) {
+function activeIntent(pathname: string, search: string) {
 	if (pathname === "/home") return "/home";
-	if (pathname === "/workspaces" || pathname.startsWith("/workspaces/")) return "/workspaces";
-	if (pathname === "/data-sources" || pathname.startsWith("/data-sources/") || pathname === "/data-catalog") return "/data-sources";
-	if (pathname === "/query" || pathname === "/playground") return "/query";
+	if (pathname === "/data-sources" || pathname.startsWith("/data-sources/") || pathname === "/data-catalog" || pathname === "/workspaces" || pathname.startsWith("/workspaces/")) return "/data-sources";
 	if (pathname === "/extensions") return "/extensions";
-	if (pathname === "/diagnostics" || pathname === "/backend-logs" || pathname === "/jupyter-logs") return "/diagnostics";
+	if (pathname === "/backends" || pathname === "/backend-logs") return "/backends";
+	if (pathname === "/environments") return search.includes("section=jupyter") ? "/jupyter" : "/environments";
+	if (pathname === "/api-keys") return "/api-keys";
+	if (pathname === "/diagnostics" || pathname === "/jupyter-logs") return "/diagnostics";
 	return "";
 }
 
@@ -50,8 +55,8 @@ function NavLink({ to, children, active }: { to: string; children: ReactNode; ac
 }
 
 function Root() {
-	const { pathname: currentPath } = useLocation();
-	const selectedIntent = activeIntent(currentPath);
+	const { pathname: currentPath, searchStr = "" } = useLocation();
+	const selectedIntent = activeIntent(currentPath, searchStr);
 	const isLogsView = currentPath === "/jupyter-logs" || currentPath === "/backend-logs";
 	const shouldHideNav = currentPath === "/setup" || currentPath === "/installation-progress";
 
@@ -77,10 +82,17 @@ function Root() {
 			</header>
 			<div className="border-b-2 border-theme-outline px-5">
 				{!shouldHideNav && (
-					<nav className="flex flex-row gap-1 overflow-x-auto" aria-label="主导航">
-						{normalNavigation.map(({ to, label }) => (
+					<nav className="flex flex-row items-end gap-1 overflow-x-auto" aria-label="主导航">
+						{openAliceNavigation.map(({ to, label }) => (
 							<NavLink key={to} to={to} active={selectedIntent === to}>{label}</NavLink>
 						))}
+						<NavLink to="/extensions" active={selectedIntent === "/extensions"}>扩展</NavLink>
+						<div className="flex items-end gap-1 border-l border-theme-outline pl-3" role="group" aria-label="ODP">
+							<span className="px-1 pb-2 text-sm font-medium text-theme-primary">ODP</span>
+							{odpNavigation.map(({ to, label, activeKey }) => (
+								<NavLink key={label} to={to} active={selectedIntent === activeKey}>{label}</NavLink>
+							))}
+						</div>
 					</nav>
 				)}
 			</div>

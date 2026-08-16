@@ -1,217 +1,101 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import type { ProviderSummary, StudioFreshness } from "../studio/contracts";
-import { latestProviderActivity, readStudioActivity } from "../studio/activity";
-import { ServiceStartAction } from "../studio/ServiceStartAction";
-import { StatusPill, StudioPageHeader, StudioPageState } from "../studio/StudioPageState";
+import { z } from "zod";
+import { StudioPageHeader } from "../studio/StudioPageState";
+import { SourceInventoryTable } from "../studio/SourceInventoryTable";
+import { StudioLink } from "../studio/StudioLink";
+import type { StudioSnapshot } from "../studio/contracts";
 import { useStudioState } from "../studio/queries";
+import { useWorkspaceStore } from "../studio/workspace-hooks";
+import { getWorkspaceMemberState, workspaceMemberStateLabel, type Workspace } from "../studio/workspace-store";
+import { odpRecoveryHref } from "../studio/odp-routes";
 
-export function DataSourcesPage() {
+export function DataSourcesPage({ workspaceId }: { workspaceId?: string } = {}) {
   const query = useStudioState();
-  const [search, setSearch] = useState("");
+  const workspaceStore = useWorkspaceStore();
   const snapshot = query.data?.snapshot;
-  const providers = useMemo(
-    () => snapshot?.providers.filter((provider) =>
-      `${provider.display_name} ${provider.name} ${provider.id}`.toLowerCase().includes(search.trim().toLowerCase()),
-    ) ?? [],
-    [search, snapshot],
-  );
-  const activity = readStudioActivity();
-  const serviceAction = snapshot?.actions.find((action) => action.entity_type === "service");
+  const activeWorkspace = workspaceId ? workspaceStore.workspaces.find((workspace) => workspace.id === workspaceId) : undefined;
+
+  if (query.isPending) {
+    return <section className="m-6 rounded border border-theme-outline bg-theme-primary p-6" role="status"><h1 className="text-xl font-semibold">正在检查数据源</h1><p className="mt-2 text-sm text-theme-muted">正在从 ODP 读取 Provider、数据集/API 身份和当前可用性，请稍候。</p></section>;
+  }
+
+  if (query.error) {
+    return <section className="m-6 rounded border border-red-400 bg-theme-primary p-6" role="alert"><h1 className="text-xl font-semibold">数据源检查失败</h1><p className="mt-2 text-sm text-theme-muted">{query.error.message}</p><div className="mt-4 flex flex-wrap gap-4 text-sm"><button className="text-theme-accent" onClick={() => void query.refetch()} type="button">重新检查</button><StudioLink className="text-theme-accent" href="/diagnostics">打开 ODP Logs</StudioLink></div></section>;
+  }
 
   return (
-    <StudioPageState error={query.error} isPending={query.isPending}>
       <div className="mx-auto w-full max-w-6xl overflow-auto py-6">
         <StudioPageHeader
           title="数据源"
-          description="这些 Provider 由当前 OpenBB 运行环境实时报告；它们不会被自动加入工作区。"
-          action={<div className="flex flex-wrap gap-3"><Link className="rounded border border-theme-outline px-4 py-2 text-sm text-theme-accent" to="/data-catalog">数据目录</Link><Link className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" to="/data-sources/add">添加数据源</Link></div>}
+          description="原生和组合数据源共用这份实时清单。每个来源保留准确的 Provider、数据集/API 身份，并从这里进入使用、详情或组合。"
+          action={<Link className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" to="/extensions">通过 Extensions 添加</Link>}
         />
-
-        {snapshot && (
-          <InspectionSummary
-            actionLabel={serviceAction?.action_label}
-            actionRoute={serviceAction?.action_route}
-            backendId={query.data?.service.backend?.id}
-            freshness={snapshot.freshness}
-            onStarted={query.refetch}
-            serviceState={query.data?.service.state}
-          />
-        )}
-
-        <label className="mt-5 block max-w-md">
-          <span className="sr-only">搜索数据源</span>
-          <input
-            className="w-full rounded border border-theme-outline bg-theme-primary px-3 py-2 text-sm"
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="按名称或 Provider 标识搜索"
-            value={search}
-          />
-        </label>
-
-        {snapshot?.providers.length ? (
-          providers.length ? (
-            <div className="mt-4 divide-y divide-theme-outline rounded border border-theme-outline bg-theme-primary">
-              {providers.map((provider) => {
-                const last = latestProviderActivity(provider.id, activity);
-                const credential = credentialSummary(provider);
-                return (
-                  <article className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto] lg:items-center" key={provider.id}>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-sm font-semibold">{provider.display_name}</h2>
-                        <StatusPill value={provider.status} />
-                      </div>
-                      <p className="mt-1 break-all text-xs text-theme-muted">
-                        Provider {provider.id} · {provider.name}
-                        {provider.version ? ` · v${provider.version}` : " · 版本未报告"}
-                      </p>
-                      <p className="mt-2 text-sm text-theme-muted">
-                        {provider.state_description ?? "OpenBB 未提供更多状态说明。"}
-                      </p>
-                    </div>
-                    <dl className="grid grid-cols-2 gap-4 text-sm lg:grid-cols-1">
-                      <div>
-                        <dt className="text-xs text-theme-muted">数据能力</dt>
-                        <dd>{provider.capability_count} 项</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-theme-muted">凭证</dt>
-                        <dd title={credential.detail}>
-                          {credential.needsSetup ? (
-                            <Link className="text-theme-accent" search={{ tab: "credentials" }} params={{ providerId: provider.id }} to="/data-sources/$providerId">{credential.label}</Link>
-                          ) : credential.label}
-                        </dd>
-                      </div>
-                    </dl>
-                    <div className="text-sm">
-                      <p className="text-xs text-theme-muted">最近测试</p>
-                      <p>{last ? `${last.succeeded ? "通过" : "失败"} · ${new Date(last.at).toLocaleString("zh-CN")}` : "尚未测试"}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-3 text-sm" aria-label={`${provider.display_name} 操作`}>
-                      <Link className="text-theme-accent" params={{ providerId: provider.id }} to="/data-sources/$providerId">打开</Link>
-                      <Link className="text-theme-accent" search={{ provider: provider.id }} to="/query">测试</Link>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            <section className="mt-4 rounded border border-theme-outline bg-theme-primary p-5" role="status">
-              <h2 className="font-semibold">没有匹配的数据源</h2>
-              <p className="mt-2 text-sm text-theme-muted">请修改搜索词；当前实时检查仍报告 {snapshot.providers.length} 个 Provider。</p>
-            </section>
-          )
+        {snapshot ? (
+          <>
+            <InventoryEvidence onRefresh={() => void query.refetch()} serviceState={query.data?.service.state} snapshot={snapshot} />
+            <SourceInventoryTable serviceState={query.data?.service.state} snapshot={snapshot} />
+          </>
         ) : (
-          <SourceEmptyState
-            actionRoute={serviceAction?.action_route}
-            backendId={query.data?.service.backend?.id}
-            freshness={snapshot?.freshness}
-            onStarted={query.refetch}
-            serviceState={query.data?.service.state}
-          />
+          <section className="mt-5 rounded border border-theme-outline bg-theme-primary p-6" role="status">
+            <h2 className="font-semibold">数据源清单暂不可用</h2>
+            <p className="mt-2 text-sm text-theme-muted">当前还没有从 ODP 读取到可确认的数据源身份。请检查 Backends 后返回重新读取。</p>
+            <StudioLink className="mt-4 inline-block text-sm text-theme-accent" href="/backends">打开 ODP Backends</StudioLink>
+          </section>
         )}
+        {activeWorkspace && snapshot && <CompositionSourceDetail serviceState={query.data?.service.state} snapshot={snapshot} workspace={activeWorkspace} />}
       </div>
-    </StudioPageState>
   );
 }
-function credentialSummary(provider: ProviderSummary): { label: string; detail: string; needsSetup: boolean } {
-  if (provider.credential_metadata_status === "unknown" || (!provider.credential_metadata_status && !provider.credential_fields.length)) {
-    return { label: "状态未知", detail: "OpenBB 未报告此 Provider 的凭证要求。", needsSetup: false };
-  }
-  if (!provider.credential_fields.length) {
-    return { label: "无需凭证", detail: "OpenBB 未声明凭证字段。", needsSetup: false };
-  }
-  const required = provider.credential_fields.filter((field) => field.required);
-  const configured = required.filter((field) => field.configured);
-  if (configured.length === required.length) {
-    return { label: "已配置", detail: `${configured.length}/${required.length} 个必填字段已配置。`, needsSetup: false };
-  }
-  return {
-    label: `缺少 ${required.length - configured.length} 项`,
-    detail: `${configured.length}/${required.length} 个必填字段已配置。`,
-    needsSetup: true,
-  };
-}
 
-
-function InspectionSummary({
-  actionLabel,
-  actionRoute,
-  backendId,
-  freshness,
-  onStarted,
-  serviceState,
-}: {
-  actionLabel?: string;
-  actionRoute?: string;
-  backendId?: string;
-  freshness: StudioFreshness;
-  onStarted: () => Promise<unknown>;
-  serviceState?: "running" | "stopped" | "error";
-}) {
-  const inspected = freshness.inspected_at ? new Date(freshness.inspected_at).toLocaleString("zh-CN") : "尚未检查";
-  const copy = freshness.status === "stale"
-    ? `当前显示缓存结果；最近检查于 ${inspected}。`
-    : freshness.status === "empty"
-      ? `OpenBB 已于 ${inspected} 完成检查，但没有报告 Provider。`
-      : freshness.status === "not_inspected"
-        ? "尚未从 OpenBB 服务读取 Provider。"
-        : `实时检查时间：${inspected}。`;
+function CompositionSourceDetail({ workspace, snapshot, serviceState }: { workspace: Workspace; snapshot: StudioSnapshot; serviceState?: "running" | "stopped" | "error" }) {
   return (
-    <section className="mt-5 flex flex-wrap items-center gap-4 rounded border border-theme-outline bg-theme-primary p-4" aria-label="OpenBB 检查状态">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">服务：{serviceState === "running" ? "运行中" : serviceState === "error" ? "异常" : "已停止"}</p>
-        <p className="mt-1 text-sm text-theme-muted">{copy}</p>
+    <section className="mt-8 border-t border-theme-outline pt-6" aria-labelledby="composition-detail-heading">
+      <p className="text-sm font-medium text-theme-accent">组合数据源详情</p>
+      <h2 className="mt-1 text-xl font-semibold" id="composition-detail-heading">{workspace.name}</h2>
+      <p className="mt-1 text-sm text-theme-muted">此处只展示已保存的准确成员身份和当前 ODP 可用性；成员维护与路由不在本入口中执行。</p>
+      <div className="mt-4 divide-y divide-theme-outline rounded border border-theme-outline bg-theme-primary">
+        {workspace.members.map((member) => {
+          const state = getWorkspaceMemberState(member, snapshot, serviceState);
+          return (
+            <article className="grid gap-2 p-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto]" key={`${member.providerId}:${member.datasetId}`}>
+              <div className="min-w-0">
+                <strong className="break-all">{member.providerId} / {member.datasetId}</strong>
+                <p className="mt-1 break-all text-xs text-theme-muted">Native path: {member.nativePath ?? "未报告"}</p>
+              </div>
+              <span className="text-theme-muted">{workspaceMemberStateLabel(state)}</span>
+            </article>
+          );
+        })}
+        {!workspace.members.length && <p className="p-4 text-sm text-theme-muted">这个组合数据源尚未保存任何成员。</p>}
       </div>
-      {actionRoute && freshness.status === "not_inspected" && (
-        <ServiceStartAction
-          backendId={backendId}
-          className="text-sm text-theme-accent"
-          href={actionRoute}
-          label={actionLabel ?? "处理服务"}
-          onStarted={onStarted}
-        />
-      )}
     </section>
   );
 }
 
-function SourceEmptyState({
-  actionRoute,
-  backendId,
-  freshness,
-  onStarted,
-  serviceState,
-}: {
-  actionRoute?: string;
-  backendId?: string;
-  freshness?: StudioFreshness;
-  onStarted: () => Promise<unknown>;
-  serviceState?: "running" | "stopped" | "error";
-}) {
-  const inspectionWasEmpty = freshness?.status === "empty";
-  return (
-    <section className="mt-4 rounded border border-theme-outline bg-theme-primary p-6" role="status">
-      <h2 className="font-semibold">{inspectionWasEmpty ? "OpenBB 没有报告数据源" : "尚未检查数据源"}</h2>
-      <p className="mt-2 text-sm text-theme-muted">
-        {inspectionWasEmpty
-          ? "实时检查已成功完成，但当前运行环境没有返回 Provider 或原生数据集。这不是检查失败。"
-          : serviceState === "stopped"
-            ? "OpenBB 服务已停止。启动服务后才能读取实时 Provider 和原生数据集。"
-            : "当前还没有可显示的实时 Provider 信息。请检查服务并重新读取。"}
-      </p>
-      {actionRoute && (
-        <ServiceStartAction
-          backendId={backendId}
-          className="mt-4 text-sm text-theme-accent"
-          href={actionRoute}
-          label="处理 OpenBB 服务"
-          onStarted={onStarted}
-        />
-      )}
-    </section>
-  );
+function InventoryEvidence({ snapshot, serviceState, onRefresh }: { snapshot: StudioSnapshot; serviceState?: "running" | "stopped" | "error"; onRefresh: () => void }) {
+  const freshness = snapshot.freshness;
+  const inspectedAt = freshness.inspected_at ? new Date(freshness.inspected_at).toLocaleString("zh-CN") : "尚未完成";
+  if (serviceState !== "running") {
+    return <section className="mt-5 rounded border border-amber-400 bg-theme-primary p-4" role="status"><h2 className="font-semibold">ODP 服务不可用</h2><p className="mt-1 text-sm text-theme-muted">清单中的身份会保留，但当前不能据此确认来源可用。最近检查：{inspectedAt}。</p><StudioLink className="mt-3 inline-block text-sm text-theme-accent" href="/backends">打开 ODP Backends</StudioLink></section>;
+  }
+  if (freshness.status === "failed") {
+    return <section className="mt-5 rounded border border-red-400 bg-theme-primary p-4" role="alert"><h2 className="font-semibold">实时数据源检查失败</h2><p className="mt-1 text-sm text-theme-muted">{freshness.error?.message ?? "ODP 未能完成本次数据源检查。"} 当前清单可能来自旧证据。</p><div className="mt-3 flex flex-wrap gap-4 text-sm"><button className="text-theme-accent" onClick={onRefresh} type="button">重新检查</button><StudioLink className="text-theme-accent" href={odpRecoveryHref(freshness.error?.action_route, "/diagnostics")}>打开负责的 ODP 控制</StudioLink></div></section>;
+  }
+  if (freshness.status === "stale") {
+    return <section className="mt-5 rounded border border-amber-400 bg-theme-primary p-4" role="status"><h2 className="font-semibold">数据源状态待刷新</h2><p className="mt-1 text-sm text-theme-muted">当前显示缓存身份；最近检查于 {inspectedAt}，不把它声明为实时可用。</p><button className="mt-3 text-sm text-theme-accent" onClick={onRefresh} type="button">重新检查</button></section>;
+  }
+  if (freshness.status === "empty") {
+    return <section className="mt-5 rounded border border-theme-outline bg-theme-primary p-4" role="status"><h2 className="font-semibold">实时检查完成，但没有数据源</h2><p className="mt-1 text-sm text-theme-muted">ODP 已于 {inspectedAt} 成功完成检查。可通过 Extensions 添加 Provider 后重新发现。</p><StudioLink className="mt-3 inline-block text-sm text-theme-accent" href="/extensions">打开 Extensions</StudioLink></section>;
+  }
+  return <p className="mt-5 text-sm text-theme-muted" role="status">实时 ODP 检查 · {inspectedAt}</p>;
 }
 
-export const Route = createFileRoute("/data-sources/")({ component: DataSourcesPage });
+function DataSourcesRoute() {
+  const { workspaceId } = Route.useSearch();
+  return <DataSourcesPage workspaceId={workspaceId} />;
+}
+
+export const Route = createFileRoute("/data-sources/")({
+  validateSearch: z.object({ workspaceId: z.string().optional(), intent: z.enum(["use", "compose"]).optional(), source: z.string().optional() }),
+  component: DataSourcesRoute,
+});

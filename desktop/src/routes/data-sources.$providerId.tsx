@@ -9,14 +9,20 @@ import { saveProviderCredentials } from "../studio/actions";
 import { StatusPill, StudioPageHeader, StudioPageState } from "../studio/StudioPageState";
 import { studioStateQueryKey, useStudioState } from "../studio/queries";
 
-type ProviderTab = "overview" | "capabilities" | "credentials" | "health" | "advanced";
+type ProviderTab = "overview" | "capabilities" | "credentials" | "health";
 
 export function ProviderDetailPage({ providerId }: { providerId: string }) {
   const query = useStudioState();
   const queryClient = useQueryClient();
   const provider = query.data?.snapshot.providers.find((item) => item.id === providerId);
-  const requestedTab = new URLSearchParams(window.location.search).get("tab") as ProviderTab | null;
-  const [tab, setTab] = useState<ProviderTab>(requestedTab ?? "overview");
+  const search = new URLSearchParams(window.location.search);
+  const requestedTabValue = search.get("tab");
+  const requestedTab = requestedTabValue && ["overview", "capabilities", "credentials", "health"].includes(requestedTabValue)
+    ? requestedTabValue as ProviderTab
+    : null;
+  const requestedIntent = search.get("intent");
+  const requestedDataset = search.get("dataset");
+  const [tab, setTab] = useState<ProviderTab>(requestedIntent === "use" ? "capabilities" : requestedTab ?? "overview");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const { register, handleSubmit, reset } = useForm<Record<string, string>>();
@@ -46,7 +52,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
       await saveProviderCredentials(changedValues);
       await queryClient.invalidateQueries({ queryKey: studioStateQueryKey });
       reset();
-      setMessage("凭证已保存。请运行一次代表性查询验证是否可用。");
+      setMessage("凭证已保存。请从当前数据源的使用入口验证是否可用。");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
     } finally {
@@ -59,10 +65,12 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
     capabilities: "数据能力",
     credentials: "凭证",
     health: "健康检查",
-    advanced: "高级",
   };
   const serviceAction = query.data?.snapshot.actions.find((action) => action.entity_type === "service");
-
+  const providerDataset = query.data?.snapshot.datasets.find((dataset) => dataset.providers.some((item) => item.provider_id === providerId));
+  const selectedDatasetId = requestedDataset ?? providerDataset?.id;
+  const sourceUseHref = selectedDatasetId ? `/data-sources/${encodeURIComponent(providerId)}?dataset=${encodeURIComponent(selectedDatasetId)}&intent=use` : "/data-sources";
+  const maintenanceHref = serviceAction?.action_route?.startsWith("/backends") ? serviceAction.action_route : "/backends";
   return (
     <StudioPageState error={query.error} isPending={query.isPending}>
       {provider ? (
@@ -70,11 +78,11 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
           <StudioPageHeader
             title={provider.display_name}
             description={`Provider ${provider.id} · OpenBB 报告 ${provider.capability_count} 项数据能力。`}
-            action={<StudioLink className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={`/query?provider=${provider.id}`}>运行测试查询</StudioLink>}
+            action={<StudioLink className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" href={sourceUseHref}>{providerDataset ? "使用" : "返回数据源选择目标"}</StudioLink>}
           />
           <nav aria-label="数据源设置" className="mt-5 overflow-x-auto border-b border-theme-outline">
             <div className="flex min-w-max gap-1" role="tablist">
-              {(["overview", "capabilities", "credentials", "health", "advanced"] as ProviderTab[]).map((item) => (
+              {(["overview", "capabilities", "credentials", "health"] as ProviderTab[]).map((item) => (
                 <button
                   aria-selected={tab === item}
                   className={`px-4 py-2 text-sm ${tab === item ? "border-b-2 border-theme-accent" : "text-theme-muted"}`}
@@ -108,7 +116,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                 </dl>
                 <div className="mt-5 flex flex-wrap gap-4 text-sm">
                   <button className="text-theme-accent" onClick={() => setTab("credentials")} type="button">配置凭证</button>
-                  <StudioLink className="text-theme-accent" href={`/query?provider=${provider.id}`}>测试 Provider</StudioLink>
+                  <StudioLink className="text-theme-accent" href={sourceUseHref}>使用数据源</StudioLink>
                   <button className="text-theme-accent" onClick={() => setTab("capabilities")} type="button">打开数据能力</button>
                 </div>
               </>
@@ -116,19 +124,19 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
 
             {tab === "capabilities" && (
               <>
-                <h2 className="font-semibold">可查询的数据能力</h2>
-                <p className="mt-1 text-sm text-theme-muted">能力标识来自当前 OpenBB coverage；测试会继续使用现有原生查询 API。</p>
+                <h2 className="font-semibold">可使用的数据能力</h2>
+                <p className="mt-1 text-sm text-theme-muted">能力标识来自当前 ODP/OpenBB coverage；使用入口保留所选 Provider 和数据集身份。</p>
                 {provider.capabilities.length ? (
                   <ul className="mt-3 divide-y divide-theme-outline">
                     {provider.capabilities.map((capability) => (
                       <li className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm" key={capability}>
                         <code className="break-all">{capability}</code>
-                        <StudioLink className="text-theme-accent" href={`/query?dataset=${encodeURIComponent(capability)}&provider=${encodeURIComponent(provider.id)}`}>打开原生查询</StudioLink>
+                        <StudioLink className="text-theme-accent" href={`/data-sources/${encodeURIComponent(provider.id)}?dataset=${encodeURIComponent(capability)}&intent=use`}>使用</StudioLink>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-4 text-sm text-theme-muted">OpenBB 已报告这个 Provider，但没有返回可查询的能力标识。</p>
+                  <p className="mt-4 text-sm text-theme-muted">ODP 已报告这个 Provider，但没有返回可使用的能力标识。</p>
                 )}
               </>
             )}
@@ -165,14 +173,14 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                     ))}
                     <div className="flex flex-wrap items-center gap-4">
                       <Button disabled={isSaving} type="submit">{isSaving ? "正在保存…" : "保存凭证"}</Button>
-                      <StudioLink className="text-sm text-theme-accent" href={`/query?provider=${provider.id}`}>运行测试查询</StudioLink>
+                      <StudioLink className="text-sm text-theme-accent" href={sourceUseHref}>使用数据源</StudioLink>
                     </div>
                     <p aria-live="polite" className="text-sm text-theme-muted">{message}</p>
                   </form>
                 ) : credentialMetadataUnknown ? (
                   <div className="mt-4 text-sm">
-                    <p className="text-theme-muted">无法确认这个 Provider 是否需要凭证。请在高级凭证页检查 OpenBB Registry 配置。</p>
-                    <StudioLink className="mt-3 inline-block text-theme-accent" href="/advanced?section=credentials">打开高级凭证</StudioLink>
+                    <p className="text-theme-muted">无法确认这个 Provider 是否需要凭证。请在 ODP API Keys 检查 OpenBB Registry 配置。</p>
+                    <StudioLink className="mt-3 inline-block text-theme-accent" href="/api-keys">打开 ODP API Keys</StudioLink>
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-theme-muted">OpenBB 明确报告这个 Provider 不需要凭证。</p>
@@ -194,7 +202,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                   <Health detail={provider.state_description ?? "Provider 来自当前 OpenBB 实时清单"} label="Provider 状态" state={provider.status} />
                   <Health
                     detail={query.data?.service.state === "running" ? "OpenBB API 正在运行" : query.data?.service.error ?? "请在服务管理启动或修复 OpenBB 服务"}
-                    label="查询服务"
+                    label="ODP 服务"
                     state={query.data?.service.state === "running" ? "available" : query.data?.service.state === "error" ? "failed" : "setup_required"}
                   />
                   <Health
@@ -203,26 +211,14 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
                     state={credentialMetadataUnknown ? "partial" : missingCredentials.length ? "credential_required" : last?.succeeded ? "available" : "ready_to_test"}
                   />
                   <Health
-                    detail={last ? `${last.succeeded ? "通过" : "失败"} · ${new Date(last.at).toLocaleString("zh-CN")}` : "尚未运行代表性查询"}
-                    label="代表性查询"
+                    detail={last ? `${last.succeeded ? "通过" : "失败"} · ${new Date(last.at).toLocaleString("zh-CN")}` : "尚未使用此来源"}
+                    label="最近使用"
                     state={last ? last.succeeded ? "available" : "failed" : "ready_to_test"}
                   />
                 </div>
                 <div className="mt-4 flex flex-wrap gap-4 text-sm">
-                  <StudioLink className="text-theme-accent" href={`/query?provider=${provider.id}`}>运行测试查询</StudioLink>
-                  {query.data?.service.state !== "running" && <StudioLink className="text-theme-accent" href={serviceAction?.action_route ?? "/backends"}>处理 OpenBB 服务</StudioLink>}
-                </div>
-              </>
-            )}
-
-            {tab === "advanced" && (
-              <>
-                <h2 className="font-semibold">高级设置</h2>
-                <p className="mt-2 text-sm text-theme-muted">仅在排查问题时使用原有 Desktop 的运行环境、凭证和日志工具。</p>
-                <div className="mt-4 flex flex-wrap gap-4 text-sm">
-                  <StudioLink className="text-theme-accent" href="/advanced?section=extensions">底层扩展</StudioLink>
-                  <StudioLink className="text-theme-accent" href="/advanced?section=credentials">完整凭证</StudioLink>
-                  <StudioLink className="text-theme-accent" href="/advanced?section=logs">日志</StudioLink>
+                  <StudioLink className="text-theme-accent" href={sourceUseHref}>使用数据源</StudioLink>
+                  {query.data?.service.state !== "running" && <StudioLink className="text-theme-accent" href={maintenanceHref}>打开 ODP Backends</StudioLink>}
                 </div>
               </>
             )}
@@ -238,7 +234,7 @@ export function ProviderDetailPage({ providerId }: { providerId: string }) {
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <Link className="text-theme-accent" to="/data-sources">返回数据源</Link>
-            {query.data?.service.state !== "running" && <StudioLink className="text-theme-accent" href={serviceAction?.action_route ?? "/backends"}>处理 OpenBB 服务</StudioLink>}
+            {query.data?.service.state !== "running" && <StudioLink className="text-theme-accent" href={maintenanceHref}>打开 ODP Backends</StudioLink>}
           </div>
         </section>
       )}

@@ -232,6 +232,11 @@ function ExtensionRow({
 
 export default function EnvironmentsPage() {
 	const search = useSearch({ from: "/environments" });
+	useEffect(() => {
+		if (search.section !== "jupyter") return;
+		const frame = requestAnimationFrame(() => document.getElementById("jupyter-controls")?.focus());
+		return () => cancelAnimationFrame(frame);
+	}, [search.section]);
 	const { setIsCreatingEnvironment } = useEnvironmentCreation();
 	const [creatingFromRequirements, setCreatingFromRequirements] =
 		useState(false);
@@ -2345,6 +2350,12 @@ end tell
 							/>
 						)}
 					</div>
+					{search.section === "jupyter" && (
+						<section className="m-2 rounded-lg border border-theme-accent p-3" id="jupyter-controls" tabIndex={-1}>
+							<h2 className="body-md-strong text-theme">Jupyter</h2>
+							<p className="body-xs-regular mt-1 text-theme-primary">Jupyter 生命周期、打开操作和日志继续由各 ODP Environment 行中的原有控件管理。</p>
+						</section>
+					)}
 
 					{creationWarning && (
 						<div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
@@ -3414,6 +3425,7 @@ export const Route = createFileRoute("/environments")({
 		return {
 			directory: search.directory as string | undefined,
 			userDataDir: search.userDataDir as string | undefined,
+			section: search.section === "jupyter" ? "jupyter" as const : undefined,
 		};
 	},
 });

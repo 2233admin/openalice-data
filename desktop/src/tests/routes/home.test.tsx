@@ -1,46 +1,38 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { Route } from "../../routes/home";
-import { startStudioService } from "../../studio/client";
-import type * as StudioClient from "../../studio/client";
 import { useStudioState } from "../../studio/queries";
 
-vi.mock("../../studio/client", async () => {
-  const actual = await vi.importActual<typeof StudioClient>("../../studio/client");
-  return { ...actual, startStudioService: vi.fn() };
-});
 vi.mock("../../studio/queries", () => ({ useStudioState: vi.fn() }));
 
 const Home = Route.options.component as React.ComponentType;
 const readyData = {
   runtime: "openbb",
   service: { state: "running" },
-  backends: [
-    { id: "openbb-api", name: "OpenBB API", command: "openbb-api", environment: "openbb", status: "running" },
-    { id: "openbb-mcp", name: "OpenBB MCP", command: "openbb-mcp", environment: "openbb", status: "stopped" },
-  ],
+  backends: [],
   extensions: [],
   snapshot: {
     providers: [{
       id: "fmp",
       name: "fmp",
       display_name: "FMP",
-      status: "credential_required",
+      status: "available",
       capability_count: 12,
       capabilities: [],
       credential_fields: [],
     }],
-    datasets: Array.from({ length: 4 }, (_, index) => ({ id: `dataset-${index}` })),
-    actions: [{
-      id: "credential:fmp",
-      severity: "warning",
-      title: "FMP 凭证缺失，相关查询会失败",
-      description: "添加 FMP 凭证后再运行代表性查询。",
-      entity_type: "credential",
-      entity_id: "fmp",
-      action_label: "添加凭证",
-      action_route: "/data-sources/fmp?tab=credentials",
+    datasets: [{
+      id: "equity.price.historical",
+      display_name: "Historical Prices",
+      category: "Equity",
+      api_path: "/api/v1/equity/price/historical",
+      providers: [{ provider_id: "fmp", state: "available" }],
+      common_query_fields: [],
+      common_data_fields: [],
+      provider_specific_query_fields: {},
+      provider_specific_fields: {},
     }],
+    actions: [],
     fetched_at: "2026-08-14T00:00:00+00:00",
     freshness: {
       status: "fresh",
@@ -61,71 +53,58 @@ describe("Home", () => {
     } as never);
   });
 
-  it("groups OpenBB API and MCP under one service-management surface", () => {
+  it("opens with a target picker instead of an inferred action center", () => {
     render(<Home />);
 
-    expect(screen.getByRole("heading", { name: "OpenBB 服务" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "OpenBB API" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "OpenBB MCP" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "打开服务管理 →" })).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "启动服务" })).toBeInTheDocument();
-    expect(screen.getByText("未运行")).toBeInTheDocument();
-    expect(screen.getByText("决定当前运行环境启动哪些 OpenBB 服务。")).toBeInTheDocument();
-    expect(screen.queryByText(/提供 OpenBB 原生数据目录/)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "打开运行环境 →" })).toHaveAttribute("href", "/environments");
+    expect(screen.getByRole("heading", { name: "选择数据源" })).toBeInTheDocument();
+    expect(screen.queryByText("行动中心")).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /FMP.*Historical Prices/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "打开数据源" })[0]).toHaveAttribute("href", "/data-sources");
   });
 
-  it("uses a live action as the single next action and preserves its entity route", () => {
+  it("exposes one explicit Start action for the selected native target", () => {
     render(<Home />);
 
-    expect(screen.getByRole("heading", { name: "行动中心" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "FMP 凭证缺失，相关查询会失败" })).toBeInTheDocument();
-    expect(screen.getByText("影响对象：凭证 · fmp")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "添加凭证" })).toHaveAttribute("href", "/data-sources/fmp?tab=credentials");
-    expect(screen.getByText("1 个")).toBeInTheDocument();
-    expect(screen.getByText("4 个")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /FMP.*Historical Prices/ }));
+
+    expect(screen.getByRole("link", { name: "使用" })).toHaveAttribute(
+      "href",
+      "/data-sources/fmp?dataset=equity.price.historical&intent=use",
+    );
   });
 
-  it("starts the managed service in place from the action center", async () => {
-    const refetch = vi.fn().mockResolvedValue(undefined);
+  it("shows persisted Workspace targets without treating them as native datasets", () => {
+    localStorage.setItem("openbb-studio.workspaces.v1", JSON.stringify({
+      version: 1,
+      workspaces: [{
+        id: "workspace-1",
+        name: "美股行情",
+        createdAt: "2026-08-14T00:00:00+00:00",
+        updatedAt: "2026-08-14T00:00:00+00:00",
+        members: [{
+          providerId: "fmp",
+          datasetId: "equity.price.historical",
+          nativePath: "/api/v1/equity/price/historical",
+          attachedAt: "2026-08-14T00:00:00+00:00",
+        }],
+        mappings: [],
+        comparison: null,
+        appliedVersion: null,
+      }],
+    }));
+
+    render(<Home />);
+
+    expect(screen.getByRole("radio", { name: /组合数据源.*美股行情/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /组合数据源.*美股行情/ }));
+    expect(screen.getByRole("link", { name: "详情" })).toHaveAttribute("href", "/data-sources?workspaceId=workspace-1&intent=use");
+  });
+
+  it("offers Data Sources when the live snapshot has no targets", () => {
     vi.mocked(useStudioState).mockReturnValue({
       data: {
         ...readyData,
-        service: { state: "stopped", backend: { id: "openbb-api" } },
-        snapshot: {
-          ...readyData.snapshot,
-          providers: [],
-          datasets: [],
-          actions: [{
-            id: "service:stopped",
-            severity: "warning",
-            title: "查询服务未运行",
-            description: "启动后才能查询。",
-            entity_type: "service",
-            action_label: "Start service",
-            action_route: "/backends",
-          }],
-        },
-      },
-      isPending: false,
-      error: null,
-      refetch,
-    } as never);
-    vi.mocked(startStudioService).mockResolvedValue({ id: "openbb-api" } as never);
-
-    render(<Home />);
-    fireEvent.click(screen.getByRole("button", { name: "Start service" }));
-
-    await waitFor(() => expect(startStudioService).toHaveBeenCalledWith("openbb-api"));
-    expect(refetch).toHaveBeenCalled();
-    expect(window.location.pathname).toBe("/");
-  });
-
-  it("shows stable empty states for secondary actions and recent activity", () => {
-    vi.mocked(useStudioState).mockReturnValue({
-      data: {
-        ...readyData,
-        snapshot: { ...readyData.snapshot, actions: [] },
+        snapshot: { ...readyData.snapshot, providers: [], datasets: [] },
       },
       isPending: false,
       error: null,
@@ -134,12 +113,30 @@ describe("Home", () => {
 
     render(<Home />);
 
-    expect(screen.getByRole("link", { name: "开始查询" })).toHaveAttribute("href", "/query");
-    expect(screen.getByText("没有其他阻塞项。你可以继续当前的下一步操作。")).toBeInTheDocument();
-    expect(screen.getByText("还没有活动。运行一次查询后，这里会保留数据集和数据源上下文。")).toBeInTheDocument();
+    expect(screen.getByText("还没有可选择的数据源。")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "选择数据源" })).toHaveAttribute("href", "/data-sources");
   });
 
-  it("keeps dataset and provider context on recent failed activity", () => {
+  it("keeps service readiness as selected-target context", () => {
+    vi.mocked(useStudioState).mockReturnValue({
+      data: {
+        ...readyData,
+        service: { state: "stopped", backend: { id: "openbb-api" } },
+      },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+
+    render(<Home />);
+    expect(within(screen.getByRole("radiogroup", { name: "可选择的数据源" })).getByText("不可用")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /FMP.*Historical Prices/ }));
+
+    expect(screen.getByText("ODP 服务未运行，当前不能确认这个来源可用。")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "打开 ODP Backends" })).toHaveAttribute("href", "/backends");
+  });
+
+  it("keeps exact recent activity context", () => {
     localStorage.setItem("openbb-studio.activity.v1", JSON.stringify([{
       datasetId: "equity/price/historical",
       providerId: "fmp",
@@ -150,39 +147,32 @@ describe("Home", () => {
 
     render(<Home />);
 
-    expect(screen.getByText("查询失败：equity/price/historical")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /查询失败：equity\/price\/historical/ })).toHaveAttribute(
+    expect(screen.getByText("使用失败：equity/price/historical")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /使用失败：equity\/price\/historical/ })).toHaveAttribute(
       "href",
-      "/query?dataset=equity%2Fprice%2Fhistorical&provider=fmp",
+      "/data-sources/fmp?dataset=equity%2Fprice%2Fhistorical",
     );
   });
 
-  it("shows a stable loading state", () => {
+  it("shows stable loading and recovery states", () => {
     vi.mocked(useStudioState).mockReturnValue({
       data: undefined,
       isPending: true,
       error: null,
       refetch: vi.fn(),
     } as never);
+    const { unmount } = render(<Home />);
+    expect(screen.getByRole("status")).toHaveTextContent("正在读取可选择的数据源");
+    unmount();
 
-    render(<Home />);
-
-    expect(screen.getByRole("status")).toHaveTextContent("正在检查现在能做什么");
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
-  });
-
-  it("shows an actionable recovery state", () => {
     vi.mocked(useStudioState).mockReturnValue({
       data: undefined,
       isPending: false,
       error: { message: "Runtime missing", actionRoute: "/advanced?section=runtimes" },
       refetch: vi.fn(),
     } as never);
-
     render(<Home />);
-
-    expect(screen.getByRole("alert")).toHaveTextContent("先恢复 OpenBB 运行环境");
-    expect(screen.getByRole("link", { name: "检查运行环境" })).toHaveAttribute("href", "/advanced?section=runtimes");
-    expect(screen.getByRole("button", { name: "重新检查" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("暂时无法读取数据源");
+    expect(screen.getByRole("link", { name: "检查 ODP Backends" })).toHaveAttribute("href", "/backends");
   });
 });
