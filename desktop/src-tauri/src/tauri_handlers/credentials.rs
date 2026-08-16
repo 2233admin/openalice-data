@@ -90,6 +90,109 @@ pub async fn update_user_credentials(credentials: serde_json::Value) -> Result<b
     update_user_credentials_impl(credentials, &RealFileSystem, &RealEnvSystem).await
 }
 
+pub async fn apply_studio_selection_impl<F: FileSystem, E: EnvSystem>(
+    environment: String,
+    provider_ids: Vec<String>,
+    workspace_id: Option<String>,
+    mode: Option<String>,
+    fs: &F,
+    env_sys: &E,
+) -> Result<bool, String> {
+    use std::path::Path;
+
+    if environment.trim().is_empty() {
+        return Err("Environment must not be empty".to_string());
+    }
+    if provider_ids.is_empty() || provider_ids.iter().any(|provider| provider.trim().is_empty()) {
+        return Err("At least one non-empty provider id is required".to_string());
+    }
+    if workspace_id
+        .as_deref()
+        .is_some_and(|workspace| workspace.trim().is_empty())
+    {
+        return Err("Workspace id must be non-empty when provided".to_string());
+    }
+    if mode
+        .as_deref()
+        .is_some_and(|selection_mode| selection_mode != "fallback" && selection_mode != "batch")
+    {
+        return Err("Mode must be 'fallback', 'batch', or null".to_string());
+    }
+
+    let home_dir = env_sys
+        .var("HOME")
+        .or_else(|_| env_sys.var("USERPROFILE"))
+        .map_err(|e| format!("Could not determine home directory: {e}"))?;
+    let platform_dir = Path::new(&home_dir).join(".openbb_platform");
+    let user_settings_path = platform_dir.join("user_settings.json");
+
+    if !fs.exists(&platform_dir) {
+        fs.create_dir_all(&platform_dir)
+            .map_err(|e| format!("Failed to create platform directory: {e}"))?;
+    }
+
+    let mut settings = if fs.exists(&user_settings_path) {
+        let settings_content = fs
+            .read_to_string(&user_settings_path)
+            .map_err(|e| format!("Failed to read user settings: {e}"))?;
+        if settings_content.trim().is_empty() {
+            serde_json::json!({})
+        } else {
+            serde_json::from_str(&settings_content)
+                .map_err(|e| format!("Failed to parse user settings: {e}"))?
+        }
+    } else {
+        serde_json::json!({})
+    };
+
+    let settings_obj = settings
+        .as_object_mut()
+        .ok_or_else(|| "User settings root must be a JSON object".to_string())?;
+    let preferences = settings_obj
+        .entry("preferences")
+        .or_insert_with(|| serde_json::json!({}));
+    if !preferences.is_object() {
+        *preferences = serde_json::json!({});
+    }
+    preferences
+        .as_object_mut()
+        .expect("preferences was normalized to an object")
+        .insert(
+            "openalice_selection".to_string(),
+            serde_json::json!({
+                "environment": environment,
+                "provider_ids": provider_ids,
+                "workspace_id": workspace_id,
+                "mode": mode,
+            }),
+        );
+
+    let settings_json = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {e}"))?;
+    fs.write(&user_settings_path, &settings_json)
+        .map_err(|e| format!("Failed to write user settings: {e}"))?;
+
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn apply_studio_selection(
+    environment: String,
+    provider_ids: Vec<String>,
+    workspace_id: Option<String>,
+    mode: Option<String>,
+) -> Result<bool, String> {
+    apply_studio_selection_impl(
+        environment,
+        provider_ids,
+        workspace_id,
+        mode,
+        &RealFileSystem,
+        &RealEnvSystem,
+    )
+    .await
+}
+
 pub async fn open_credentials_file_impl<F: FileSystem, E: EnvSystem>(
     file_name: Option<String>,
     fs: &F,
@@ -529,5 +632,76 @@ mod tests {
 
         let result = open_credentials_file_impl(Some(file_name), &mock_fs, &mock_env).await;
         assert!(result.is_ok() || result.is_err());
+    }
+    #[tokio::test]
+    async fn apply_studio_selection_preserves_credentials_and_unrelated_settings() {
+        let mut mock_fs = MockFileSystem::new();
+        let mut mock_env = MockEnvSystem::new();
+
+        mock_env
+            .expect_var()
+            .with(eq("HOME"))
+            .returning(|_| Ok("/mock/home".to_string()));
+
+        let platform_dir = PathBuf::from("/mock/home/.openbb_platform");
+        let settings_path = platform_dir.join("user_settings.json");
+        mock_fs
+            .expect_exists()
+            .with(eq(platform_dir.clone()))
+            .return_const(true);
+        mock_fs
+            .expect_exists()
+            .with(eq(settings_path.clone()))
+            .return_const(true);
+        mock_fs
+            .expect_read_to_string()
+            .with(eq(settings_path.clone()))
+            .returning(|_| Ok(r#"{"credentials":{"fmp_api_key":"secret"},"other":{"keep":true}}"#.to_string()));
+        mock_fs
+            .expect_write()
+            .withf(move |path, contents| {
+                if path != settings_path {
+                    return false;
+                }
+                let value: serde_json::Value = serde_json::from_str(contents).expect("valid settings");
+                value["credentials"]["fmp_api_key"] == "secret"
+                    && value["other"]["keep"] == true
+                    && value["preferences"]["openalice_selection"]["environment"] == "research"
+                    && value["preferences"]["openalice_selection"]["provider_ids"]
+                        == serde_json::json!(["fmp"])
+                    && value["preferences"]["openalice_selection"]["workspace_id"] == "ws"
+                    && value["preferences"]["openalice_selection"]["mode"] == "batch"
+            })
+            .returning(|_, _| Ok(()));
+
+        let result = apply_studio_selection_impl(
+            "research".to_string(),
+            vec!["fmp".to_string()],
+            Some("ws".to_string()),
+            Some("batch".to_string()),
+            &mock_fs,
+            &mock_env,
+        )
+        .await;
+
+        assert_eq!(result, Ok(true));
+    }
+
+    #[tokio::test]
+    async fn apply_studio_selection_rejects_empty_provider_ids() {
+        let mock_fs = MockFileSystem::new();
+        let mock_env = MockEnvSystem::new();
+
+        let result = apply_studio_selection_impl(
+            "research".to_string(),
+            Vec::new(),
+            None,
+            None,
+            &mock_fs,
+            &mock_env,
+        )
+        .await;
+
+        assert_eq!(result, Err("At least one non-empty provider id is required".to_string()));
     }
 }

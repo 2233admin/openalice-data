@@ -36,7 +36,7 @@ use crate::tauri_handlers::jupyter::{
 };
 
 use crate::tauri_handlers::credentials::{
-    get_user_credentials, open_credentials_file, update_user_credentials,
+    apply_studio_selection, get_user_credentials, open_credentials_file, update_user_credentials,
 };
 
 use crate::tauri_handlers::studio::inspect_studio_environment;
@@ -534,6 +534,7 @@ fn main() {
             get_user_credentials,
             open_credentials_file,
             update_user_credentials,
+            apply_studio_selection,
             open_url_in_window,
             register_process_monitoring,
             unregister_process_monitoring,

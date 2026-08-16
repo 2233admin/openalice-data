@@ -11,18 +11,96 @@ export interface BackendService {
   url?: string;
   command?: string;
   error?: string;
+  auto_start?: boolean;
+  autoStart?: boolean;
+  host?: string;
+  port?: number;
+  working_directory?: string;
+  [key: string]: unknown;
 }
 
-interface Runtime {
+export interface RuntimeSummary {
   name: string;
+  path?: string;
+  pythonVersion?: string;
+  [key: string]: unknown;
 }
+
+export type ExtensionRole = "frontend" | "notebook";
+
+export interface FrontendDescriptor {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export type LaunchableFrontend = FrontendDescriptor & {
+  builtin: boolean;
+  extensionPackage?: string;
+  role?: ExtensionRole;
+  display_name?: string;
+  frontend?: FrontendDescriptor;
+};
+
+export const builtinLaunchableFrontend: LaunchableFrontend = {
+  id: "frontend:openbb-workspace",
+  name: "OpenBB Workspace",
+  url: "https://pro.openbb.co",
+  builtin: true,
+};
+
+function isValidFrontendDescriptor(value: unknown): value is FrontendDescriptor {
+  if (!value || typeof value !== "object") return false;
+  const descriptor = value as Record<string, unknown>;
+  if (
+    typeof descriptor.id !== "string" ||
+    !descriptor.id.trim() ||
+    typeof descriptor.name !== "string" ||
+    !descriptor.name.trim() ||
+    typeof descriptor.url !== "string" ||
+    !descriptor.url.trim()
+  ) {
+    return false;
+  }
+  try {
+    const parsed = new URL(descriptor.url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function listLaunchableFrontends(extensions: InstalledExtension[] = []): LaunchableFrontend[] {
+  const frontends: LaunchableFrontend[] = [builtinLaunchableFrontend];
+  const knownIds = new Set(frontends.map((frontend) => frontend.id));
+  for (const extension of extensions) {
+    if (extension.role !== "frontend" || !isValidFrontendDescriptor(extension.frontend)) continue;
+    const { id, name, url } = extension.frontend;
+    if (knownIds.has(id)) continue;
+    knownIds.add(id);
+    frontends.push({
+      id,
+      name,
+      url,
+      builtin: false,
+      extensionPackage: extension.package,
+    });
+  }
+  return frontends;
+}
+
 
 export interface InstalledExtension {
   package: string;
   version: string;
   install_method: "pip" | "conda";
   channel: string;
+  role?: ExtensionRole;
+  display_name?: string;
+  frontend?: FrontendDescriptor;
 }
+
+
 
 export interface StudioServiceState {
   state: "running" | "stopped" | "error";
@@ -32,6 +110,7 @@ export interface StudioServiceState {
 
 export interface StudioState {
   runtime: string;
+  runtimes: RuntimeSummary[];
   service: StudioServiceState;
   snapshot: StudioSnapshot;
   extensions: InstalledExtension[];
@@ -43,6 +122,7 @@ export interface StudioErrorContext {
   serviceState?: StudioServiceState["state"];
   backendId?: string;
 }
+
 
 export class StudioStateError extends Error {
   constructor(
@@ -65,11 +145,11 @@ function emptySnapshot(service: StudioServiceState, runtime: string): StudioSnap
       id: "service:stopped",
       state: "setup_required",
       severity: "warning",
-      title: "OpenBB service is stopped",
-      description: "Start the managed OpenBB service to inspect live Providers and datasets.",
+      title: "OpenBB 服务未运行",
+      description: "启动受管服务后才能检查实时数据源。",
       entity_type: "service",
-      action_label: "Start service",
-      action_route: "/backends",
+      action_label: "检查服务",
+      action_route: "/environment-extensions?tab=services",
     }],
     fetched_at: fetchedAt,
     freshness: {
@@ -86,6 +166,9 @@ function emptySnapshot(service: StudioServiceState, runtime: string): StudioSnap
   });
 }
 
+function normalizedRuntimeName(name: string): string {
+  return name.trim().toLowerCase();
+}
 function isOpenBbBackend(candidate: BackendService): boolean {
   const identity = `${candidate.name} ${candidate.command ?? ""}`.toLowerCase();
   return identity.includes("openbb");
@@ -96,42 +179,48 @@ function isOpenBbApiBackend(candidate: BackendService): boolean {
   return identity.includes("openbb api") || identity.includes("openbb-api");
 }
 
-function selectRuntime(backends: BackendService[], runtimes: Runtime[]): {
+export function isOpenBbRuntime(name: string): boolean {
+  return normalizedRuntimeName(name) === "openbb";
+}
+
+function sameRuntimeName(left: string, right: string): boolean {
+  return normalizedRuntimeName(left) === normalizedRuntimeName(right);
+}
+
+function selectRuntime(backends: BackendService[], runtimes: RuntimeSummary[]): {
   backend?: BackendService;
   runtime?: string;
 } {
   const openbbBackends = backends.filter(isOpenBbBackend);
   const backend = openbbBackends.find(isOpenBbApiBackend);
-  const runtimeNames = new Set(runtimes.map((candidate) => candidate.name));
-  const backendRuntime = backend?.environment && runtimeNames.has(backend.environment)
-    ? backend.environment
+  const backendRuntime = backend?.environment
+    ? runtimes.find((candidate) => sameRuntimeName(candidate.name, backend.environment))?.name
     : undefined;
   const runningBackendHasMissingRuntime = backend?.status === "running"
     && Boolean(backend.environment)
     && !backendRuntime;
   const runtime = runningBackendHasMissingRuntime
     ? undefined
-    : backendRuntime ?? runtimes.find((candidate) => candidate.name === "openbb")?.name;
+    : backendRuntime ?? runtimes.find((candidate) => isOpenBbRuntime(candidate.name))?.name;
   return { backend, runtime };
 }
 
 export async function loadStudioState(invoke: Invoke = tauriInvoke): Promise<StudioState> {
   const [backends, runtimes] = await Promise.all([
     invoke<BackendService[]>("list_backend_services"),
-    invoke<Runtime[]>("list_conda_environments", { directory: null }),
+    invoke<RuntimeSummary[]>("list_conda_environments", { directory: null }),
   ]);
   const selection = selectRuntime(backends, runtimes);
-  const openbbBackends = backends.filter(isOpenBbBackend);
+  const backend = selection.backend;
   if (!selection.runtime) {
     throw new StudioStateError(
       "RUNTIME_NOT_FOUND",
-      "OpenBB Studio could not find a managed OpenBB runtime. Install or repair the runtime in Advanced.",
-      "/advanced?section=runtimes",
+      "找不到受管 OpenBB 运行环境，请在“环境与扩展”中创建或修复环境。",
+      "/environment-extensions?tab=environment",
       { serviceState: "stopped", backendId: selection.backend?.id },
     );
   }
 
-  const backend = selection.backend;
   const serviceState: StudioServiceState = backend
     ? {
         // A configured backend is stopped until the backend manager reports
@@ -143,12 +232,21 @@ export async function loadStudioState(invoke: Invoke = tauriInvoke): Promise<Stu
     : { state: "stopped" };
 
   if (serviceState.state !== "running") {
+    let extensions: InstalledExtension[] = [];
+    try {
+      const extensionResult = await invoke<{ extensions: InstalledExtension[] }>("get_environment_extensions", { name: selection.runtime });
+      extensions = extensionResult.extensions;
+    } catch {
+      // A stopped or broken service must not hide the rest of the runtime state
+      // when extension inventory is temporarily unavailable.
+    }
     return {
       runtime: selection.runtime,
+      runtimes,
       service: serviceState,
-      backends: openbbBackends,
+      backends,
       snapshot: emptySnapshot(serviceState, selection.runtime),
-      extensions: [],
+      extensions,
     };
   }
 
@@ -163,8 +261,9 @@ export async function loadStudioState(invoke: Invoke = tauriInvoke): Promise<Stu
     const snapshot = studioSnapshotSchema.parse(rawSnapshot);
     return {
       runtime: selection.runtime,
+      runtimes,
       service: serviceState,
-      backends: openbbBackends,
+      backends,
       snapshot,
       extensions: extensionResult.extensions,
     };
@@ -173,7 +272,7 @@ export async function loadStudioState(invoke: Invoke = tauriInvoke): Promise<Stu
     throw new StudioStateError(
       "INSPECTION_FAILED",
       error instanceof Error ? error.message : String(error),
-      "/advanced?section=diagnostics",
+      "/environment-extensions?tab=services",
       {
         runtime: selection.runtime,
         serviceState: serviceState.state,
@@ -181,6 +280,30 @@ export async function loadStudioState(invoke: Invoke = tauriInvoke): Promise<Stu
       },
     );
   }
+}
+
+export async function stopStudioService(
+  backendId: string,
+  invoke: Invoke = tauriInvoke,
+): Promise<void> {
+  await invoke("stop_backend_service", { id: backendId });
+}
+
+export async function startStudioServiceAndWait(
+  backendId: string,
+  invoke: Invoke = tauriInvoke,
+): Promise<BackendService> {
+  const started = await startStudioService(backendId, invoke);
+  await waitForStudioService(started);
+  return started;
+}
+
+export async function restartStudioService(
+  backendId: string,
+  invoke: Invoke = tauriInvoke,
+): Promise<BackendService> {
+  await stopStudioService(backendId, invoke);
+  return startStudioServiceAndWait(backendId, invoke);
 }
 
 export async function startStudioService(

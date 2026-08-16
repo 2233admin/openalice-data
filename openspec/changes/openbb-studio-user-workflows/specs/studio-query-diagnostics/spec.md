@@ -4,25 +4,30 @@ Let users run reproducible queries against either an OpenBB-native dataset or a 
 
 ## ADDED Requirements
 
-### Requirement: Native and workspace query targets
+### Requirement: Native and composition query targets
 
-Query MUST accept either an explicit Provider-native dataset or a workspace whose required mappings are applied and compatibility status is verified. The selected target, Provider/dataset members, query parameters, and target kind MUST remain visible while the query is edited and executed.
+Query MUST accept either an explicit Provider-native dataset or an explicit composition source. The selected target kind, identity, Provider/member provenance, query parameters, and gate state MUST remain visible while the query is edited and executed.
 
 #### Scenario: Run a native dataset query
 - **WHEN** the user selects a discovered native dataset, Provider, and valid parameters
 - **THEN** Studio calls the existing OpenBB query API for that exact Provider/dataset
 - **AND** shows returned rows, submitted inputs, duration, warnings, and the raw response view
-- **AND** the native query does not require a workspace
+- **AND** the native query does not require a composition
 
-#### Scenario: Run a workspace query
-- **WHEN** the user selects a workspace with applied mappings and verified compatibility
-- **THEN** Studio runs the workspace query through the existing OpenBB-compatible query path
-- **AND** keeps the member/source provenance visible in the result
-- **AND** the query uses only the workspace version that passed verification
+#### Scenario: Run a source-backed composition query
+- **WHEN** the user selects a composition with at least one usable member and chooses that member or a configured fallback
+- **THEN** Studio runs the existing query API through that exact member
+- **AND** identifies the actual member/provider in the result and activity evidence
+- **AND** does not claim that the member set has shared canonical semantics
 
-#### Scenario: Workspace is not queryable
-- **WHEN** the selected workspace has an unverified, incompatible, blocked, or apply-failed mapping
-- **THEN** Studio prevents unified execution
+#### Scenario: Run a shared-canonical composition query
+- **WHEN** the user selects a composition whose required mappings are applied, compatibility status is verified, evidence is fresh, and the applied version matches the comparison version
+- **THEN** Studio runs the shared-canonical query through the existing OpenBB-compatible query path
+- **AND** keeps member/source provenance and mapping version visible in the result
+
+#### Scenario: Composition is not queryable in the requested mode
+- **WHEN** the selected composition has no usable member, or shared-canonical mapping is unverified, incompatible, blocked, or apply-failed
+- **THEN** Studio prevents only the affected execution mode
 - **AND** explains the blocking state
 - **AND** provides a direct route to mapping, comparison, source, credential, or service repair
 

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   attachNativeDataset,
-  createWorkspace,
+  createWorkspaceFromMembers,
   detachNativeDataset,
   getWorkspaceMemberState,
+  moveNativeDataset,
   migrateWorkspaceStore,
   openWorkspace,
   readWorkspaceStore,
@@ -12,7 +13,13 @@ import {
   workspaceStorageKey,
 } from "../../studio/workspace-store";
 
-function storage() {
+type TestStorage = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
+};
+
+function storage(): TestStorage {
   const values = new Map<string, string>();
   return {
     getItem: (key: string) => values.get(key) ?? null,
@@ -22,6 +29,11 @@ function storage() {
 }
 
 const member = { providerId: "fmp", datasetId: "equity.price.historical", nativePath: "/api/v1/equity/price/historical", attachedAt: "2026-08-15T00:00:00.000Z" };
+const secondMember = { providerId: "fmp", datasetId: "equity.price.quote", nativePath: "/api/v1/equity/price/quote", attachedAt: "2026-08-15T00:00:00.000Z" };
+
+function createWorkspace(name: string, target: TestStorage) {
+  return createWorkspaceFromMembers(name, [member, secondMember], target);
+}
 
 function snapshot() {
   return {
@@ -40,7 +52,7 @@ describe("workspace store", () => {
     const id = workspace.id;
     expect(openWorkspace(id, target)?.name).toBe("US equities");
     renameWorkspace(id, "US fundamentals", target);
-    expect(readWorkspaceStore(target).workspaces[0]).toMatchObject({ id, name: "US fundamentals", members: [], mappings: [], comparison: null, appliedVersion: null });
+    expect(readWorkspaceStore(target).workspaces[0]).toMatchObject({ id, name: "US fundamentals", members: [member, secondMember], mappings: [], comparison: null, appliedVersion: null });
     expect(openWorkspace(id, target)?.id).toBe(id);
     expect(removeWorkspace(id, target)).toBe(true);
     expect(openWorkspace(id, target)).toBeNull();
@@ -63,11 +75,21 @@ describe("workspace store", () => {
     const target = storage();
     const workspace = createWorkspace("Sources", target);
     attachNativeDataset(workspace.id, member, target);
-    expect(openWorkspace(workspace.id, target)?.members).toEqual([member]);
+    expect(openWorkspace(workspace.id, target)?.members).toEqual([member, secondMember]);
     attachNativeDataset(workspace.id, member, target);
-    expect(openWorkspace(workspace.id, target)?.members).toHaveLength(1);
+    expect(openWorkspace(workspace.id, target)?.members).toHaveLength(2);
     detachNativeDataset(workspace.id, member.providerId, member.datasetId, target);
-    expect(openWorkspace(workspace.id, target)?.members).toEqual([]);
+    expect(openWorkspace(workspace.id, target)?.members).toEqual([secondMember]);
+  });
+
+  it("reorders persisted members without changing their exact identities", () => {
+    const target = storage();
+    const workspace = createWorkspace("Sources", target);
+    const moved = moveNativeDataset(workspace.id, member.providerId, member.datasetId, "down", target);
+    expect(moved.members).toEqual([secondMember, member]);
+    expect(openWorkspace(workspace.id, target)?.members).toEqual([secondMember, member]);
+    expect(moveNativeDataset(workspace.id, member.providerId, member.datasetId, "down", target).members).toEqual([secondMember, member]);
+    expect(moveNativeDataset(workspace.id, member.providerId, member.datasetId, "up", target).members).toEqual([member, secondMember]);
   });
 
   it("marks source state stale or unavailable when live source state changes", () => {

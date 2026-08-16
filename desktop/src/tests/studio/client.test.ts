@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadStudioState, waitForStudioService, type Invoke } from "../../studio/client";
+import { listLaunchableFrontends, loadStudioState, restartStudioService, waitForStudioService, type Invoke } from "../../studio/client";
 
 const snapshot = {
   providers: [], datasets: [], actions: [], fetched_at: "2026-08-14T00:00:00+00:00",
@@ -24,7 +24,7 @@ describe("loadStudioState", () => {
     expect(invoke).toHaveBeenCalledWith("inspect_studio_environment", { environment: "research", base_url: "http://127.0.0.1:7900" });
     expect(state.runtime).toBe("research");
     expect(state.service.state).toBe("running");
-    expect(state.backends?.map((backend) => backend.id)).toEqual(["mcp", "api"]);
+    expect(state.backends?.map((backend) => backend.id)).toEqual(["other", "mcp", "api"]);
   });
 
   it("does not treat an unrelated Uvicorn backend as the OpenBB API", async () => {
@@ -61,7 +61,18 @@ describe("loadStudioState", () => {
     expect(state.service.state).toBe("stopped");
     expect(state.snapshot.providers).toEqual([]);
   });
+  it("recognizes the OpenBB default environment when its persisted name casing differs", async () => {
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "list_backend_services") return [];
+      if (command === "list_conda_environments") return [{ name: "OpenBB" }];
+      if (command === "get_environment_extensions") return { extensions: [] };
+      throw new Error(`Unexpected command: ${command}`);
+    });
 
+    const state = await loadStudioState(invoke as unknown as Invoke);
+
+    expect(state.runtime).toBe("OpenBB");
+  });
   it("returns an actionable error when no OpenBB runtime exists", async () => {
     const invoke = vi.fn(async (command: string) => {
       if (command === "list_backend_services") return [];
@@ -71,7 +82,7 @@ describe("loadStudioState", () => {
 
     await expect(loadStudioState(invoke as unknown as Invoke)).rejects.toMatchObject({
       code: "RUNTIME_NOT_FOUND",
-      actionRoute: "/advanced?section=runtimes",
+      actionRoute: "/environment-extensions?tab=environment",
     });
   });
   it("does not fall back to another runtime when a running backend runtime is missing", async () => {
@@ -89,8 +100,7 @@ describe("loadStudioState", () => {
     });
 
     await expect(loadStudioState(invoke as unknown as Invoke)).rejects.toMatchObject({
-      code: "RUNTIME_NOT_FOUND",
-      actionRoute: "/advanced?section=runtimes",
+      actionRoute: "/environment-extensions?tab=environment",
       context: { backendId: "api" },
     });
   });
@@ -117,7 +127,7 @@ describe("loadStudioState", () => {
     expect(state.snapshot.freshness.status).toBe("not_inspected");
   });
 
-  it("reports inspection failures with runtime context and an Advanced diagnostics route", async () => {
+  it("reports inspection failures with runtime context and an environment services route", async () => {
     const invoke = vi.fn(async (command: string) => {
       if (command === "list_backend_services") return [{
         id: "api",
@@ -135,10 +145,91 @@ describe("loadStudioState", () => {
 
     await expect(loadStudioState(invoke as unknown as Invoke)).rejects.toMatchObject({
       code: "INSPECTION_FAILED",
-      actionRoute: "/advanced?section=diagnostics",
+      actionRoute: "/environment-extensions?tab=services",
       context: { runtime: "openbb", serviceState: "running", backendId: "api" },
     });
   });
+  it("retains installed extension inventory while the service is stopped", async () => {
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "list_backend_services") return [{
+        id: "api",
+        name: "OpenBB API",
+        command: "openbb-api",
+        environment: "openbb",
+        status: "stopped",
+      }];
+      if (command === "list_conda_environments") return [{ name: "openbb" }];
+      if (command === "get_environment_extensions") return {
+        extensions: [{ package: "openbb-yfinance", version: "1.0.0", install_method: "pip", channel: "pypi" }],
+      };
+      throw new Error(`Unexpected command: ${command}`);
+    });
+
+    const state = await loadStudioState(invoke as unknown as Invoke);
+
+    expect(state.extensions).toEqual([{
+      package: "openbb-yfinance",
+      version: "1.0.0",
+      install_method: "pip",
+      channel: "pypi",
+    }]);
+  });
+
+});
+
+it("lists built-in and explicitly declared installed frontends", () => {
+  expect(listLaunchableFrontends([
+    {
+      package: "acme-terminal",
+      version: "1.0.0",
+      install_method: "pip",
+      channel: "pypi",
+      role: "frontend",
+      frontend: {
+        id: "frontend:acme-terminal",
+        name: "Acme Terminal",
+        url: "http://127.0.0.1:9010",
+      },
+    },
+    {
+      package: "openbb-fmp",
+      version: "1.0.0",
+      install_method: "pip",
+      channel: "pypi",
+    },
+  ])).toEqual([
+    {
+      id: "frontend:openbb-workspace",
+      name: "OpenBB Workspace",
+      url: "https://pro.openbb.co",
+      builtin: true,
+    },
+    {
+      id: "frontend:acme-terminal",
+      name: "Acme Terminal",
+      url: "http://127.0.0.1:9010",
+      builtin: false,
+      extensionPackage: "acme-terminal",
+    },
+  ]);
+});
+it("stops, starts, and waits for a running service during restart", async () => {
+  const invoke = vi.fn(async (command: string) => {
+    if (command === "stop_backend_service") return undefined;
+    if (command === "start_backend_service") return {
+      id: "api",
+      name: "OpenBB API",
+      command: "openbb-api",
+      environment: "openbb",
+      status: "running",
+    };
+    throw new Error(`Unexpected command: ${command}`);
+  });
+
+  await restartStudioService("api", invoke as unknown as Invoke);
+
+  expect(invoke).toHaveBeenNthCalledWith(1, "stop_backend_service", { id: "api" });
+  expect(invoke).toHaveBeenNthCalledWith(2, "start_backend_service", { id: "api" });
 });
 
 it("waits for OpenBB coverage readiness before refreshing Studio state", async () => {

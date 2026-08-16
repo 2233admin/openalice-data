@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const normalizedStateSchema = z.enum([
   "not_installed",
+  "installed_not_applied",
   "setup_required",
   "credential_required",
   "ready_to_test",

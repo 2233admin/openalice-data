@@ -1,0 +1,29 @@
+{
+  "schema": "design-pipeline.playground.v1",
+  "changeId": "studio-ux-architecture",
+  "applicability": {
+    "status": "waived",
+    "reason": "non-visual",
+    "rationale": "This round maps the real product surfaces and state/recovery contracts in durable Markdown artifacts; a tunable visual Playground would not replace the required task walkthroughs or live OpenBB evidence."
+  },
+  "surface": null,
+  "selection": {
+    "status": "waived",
+    "values": null,
+    "changedControlIds": [],
+    "stateSha256": null,
+    "prompt": null
+  },
+  "verification": {
+    "status": "waived",
+    "method": null,
+    "checkedAt": null,
+    "surfaceSha256": null,
+    "checks": null,
+    "evidence": null
+  },
+  "integration": {
+    "status": "waived",
+    "target": null
+  }
+}

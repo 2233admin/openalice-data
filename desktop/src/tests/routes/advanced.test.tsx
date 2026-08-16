@@ -1,38 +1,21 @@
-import { render, screen } from "@testing-library/react";
-import { Route } from "../../routes/advanced";
+import { render, screen, waitFor } from "@testing-library/react";
+import { vi } from "vitest";
+import type * as Router from "@tanstack/react-router";
+import { AdvancedPage } from "../../routes/advanced";
 
-const Advanced = Route.options.component as React.ComponentType;
+const navigate = vi.fn();
 
-describe("Advanced", () => {
-  beforeEach(() => {
-    window.history.replaceState({}, "", "/advanced");
+vi.mock("@tanstack/react-router", async () => {
+  const actual = await vi.importActual<typeof Router>("@tanstack/react-router");
+  return { ...actual, useNavigate: () => navigate };
+});
+
+describe("legacy advanced route", () => {
+  it("redirects credential maintenance into the unified data source surface", async () => {
+    window.history.pushState({}, "", "/advanced?section=credentials");
+    render(<AdvancedPage />);
+    expect(screen.getByText("正在打开环境与扩展中的维护入口…")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "继续" })).toHaveAttribute("href", "/data-sources");
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/data-sources" }));
   });
-
-  it("keeps non-primary system tools reachable without duplicating OpenBB functions", () => {
-    render(<Advanced />);
-
-    for (const heading of ["运行环境", "凭证", "扩展内部", "日志"]) {
-      expect(screen.getByRole("heading", { name: heading, level: 2 })).toBeInTheDocument();
-    }
-    expect(screen.queryByRole("heading", { name: "服务", level: 2 })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "OpenBB 扩展安装器" })).toBeInTheDocument();
-  });
-
-  it("keeps original non-primary OpenBB handoffs reachable", () => {
-    render(<Advanced />);
-
-    expect(screen.getByRole("link", { name: /打开运行环境/ })).toHaveAttribute("href", "/environments");
-    expect(screen.getByRole("link", { name: /打开完整凭证/ })).toHaveAttribute("href", "/api-keys");
-    expect(screen.getByRole("link", { name: /打开扩展安装器/ })).toHaveAttribute("href", "/extensions");
-    expect(screen.getByRole("link", { name: /打开诊断/ })).toHaveAttribute("href", "/diagnostics");
-  });
-
-  it("marks a deep-linked internal section without changing its handoff", () => {
-    window.history.replaceState({}, "", "/advanced?section=extensions");
-    render(<Advanced />);
-
-    expect(screen.getByRole("link", { name: /打开扩展安装器/ })).toHaveAttribute("aria-current", "location");
-    expect(screen.getByRole("link", { name: /打开扩展安装器/ })).toHaveAttribute("href", "/extensions");
-  });
-
 });

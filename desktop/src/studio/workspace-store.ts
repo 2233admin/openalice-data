@@ -45,6 +45,7 @@ export const workspaceSchema = z.object({
   mappings: z.array(mappingRecordSchema),
   comparison: compatibilityReportSchema.nullable(),
   appliedVersion: z.string().min(1).nullable(),
+  mode: z.enum(["fallback", "batch"]).default("fallback"),
 }).strict();
 export const workspaceStoreSchema = z.object({
   version: z.literal(WORKSPACE_STORE_VERSION),
@@ -111,6 +112,7 @@ export function migrateWorkspaceStore(raw: unknown): WorkspaceStore {
       mappings: Array.isArray(item.mappings) ? item.mappings : [],
       comparison: item.comparison ?? null,
       appliedVersion: typeof item.appliedVersion === "string" ? item.appliedVersion : null,
+      mode: item.mode === "batch" ? "batch" : "fallback",
     };
     const parsed = workspaceSchema.safeParse(record);
     if (parsed.success) migrated.push(parsed.data);
@@ -160,22 +162,38 @@ export function openWorkspace(workspaceId: string, storage?: WorkspaceStorage): 
   return listWorkspaces(storage).find((workspace) => workspace.id === workspaceId) ?? null;
 }
 
-export function createWorkspace(name: string, storage?: WorkspaceStorage): Workspace {
+export function createWorkspaceFromMembers(name: string, members: NativeDatasetRef[] = [], storage?: WorkspaceStorage): Workspace {
   const normalizedName = name.trim();
   if (!normalizedName) throw new Error("Workspace name must not be empty.");
+  const parsedMembers = members.map((member) => nativeDatasetRefSchema.parse(member));
+  const uniqueMembers = parsedMembers.filter((member, index, all) =>
+    all.findIndex((candidate) => candidate.providerId === member.providerId && candidate.datasetId === member.datasetId) === index,
+  );
   const timestamp = now();
   const workspace: Workspace = {
     id: createId(),
     name: normalizedName,
     createdAt: timestamp,
     updatedAt: timestamp,
-    members: [],
+    members: uniqueMembers,
     mappings: [],
     comparison: null,
     appliedVersion: null,
+    mode: "fallback",
   };
   const store = readWorkspaceStore(storage);
   writeWorkspaceStore({ ...store, workspaces: [...store.workspaces, workspace] }, storage);
+  return workspace;
+}
+
+export function setWorkspaceMode(workspaceId: string, mode: "fallback" | "batch", storage?: WorkspaceStorage): Workspace {
+  const store = readWorkspaceStore(storage);
+  const index = store.workspaces.findIndex((workspace) => workspace.id === workspaceId);
+  if (index < 0) throw new Error("Workspace not found.");
+  const workspace = { ...store.workspaces[index], mode, updatedAt: now() };
+  const workspaces = [...store.workspaces];
+  workspaces[index] = workspace;
+  writeWorkspaceStore({ ...store, workspaces }, storage);
   return workspace;
 }
 
@@ -238,6 +256,30 @@ export function detachNativeDataset(workspaceId: string, providerId: string, dat
   return updated;
 }
 
+export function moveNativeDataset(
+  workspaceId: string,
+  providerId: string,
+  datasetId: string,
+  direction: "up" | "down",
+  storage?: WorkspaceStorage,
+): Workspace {
+  const store = readWorkspaceStore(storage);
+  const index = store.workspaces.findIndex((workspace) => workspace.id === workspaceId);
+  if (index < 0) throw new Error("Workspace not found.");
+  const workspace = store.workspaces[index];
+  const memberIndex = workspace.members.findIndex((member) => member.providerId === providerId && member.datasetId === datasetId);
+  if (memberIndex < 0) throw new Error("Workspace member not found.");
+  const targetIndex = direction === "up" ? memberIndex - 1 : memberIndex + 1;
+  if (targetIndex < 0 || targetIndex >= workspace.members.length) return workspace;
+  const members = [...workspace.members];
+  [members[memberIndex], members[targetIndex]] = [members[targetIndex], members[memberIndex]];
+  const updated = { ...workspace, members, updatedAt: now() };
+  const workspaces = [...store.workspaces];
+  workspaces[index] = updated;
+  writeWorkspaceStore({ ...store, workspaces }, storage);
+  return updated;
+}
+
 export function getWorkspaceMemberState(
   member: NativeDatasetRef,
   snapshot: StudioSnapshot | null | undefined,
@@ -247,6 +289,11 @@ export function getWorkspaceMemberState(
   if (!serviceState) return "unknown";
   if (serviceState !== "running") return serviceState === "error" ? "unavailable" : "stale";
   const provider = snapshot.providers.find((item) => item.id === member.providerId);
+  if (member.datasetId === "__provider__") {
+    if (!provider || provider.status === "failed" || provider.status === "not_installed") return "unavailable";
+    if (["available", "ready_to_test", "partial"].includes(provider.status)) return "available";
+    return "stale";
+  }
   const dataset = snapshot.datasets.find((item) => item.id === member.datasetId);
   if (!provider || !dataset) return "unavailable";
   const providerState = dataset.providers.find((item) => item.provider_id === member.providerId)?.state;

@@ -88,7 +88,7 @@ export function ProviderDetailPage({ providerId, routeSearch }: { providerId: st
   const sourceUseHref = sourceUseDatasetId
     ? `/data-sources/${encodeURIComponent(providerId)}?dataset=${encodeURIComponent(sourceUseDatasetId)}&intent=use`
     : providerDatasets.length ? `/data-sources/${encodeURIComponent(providerId)}?intent=use` : "/data-sources";
-  const maintenanceHref = serviceAction?.action_route?.startsWith("/backends") ? serviceAction.action_route : "/backends";
+  const maintenanceHref = serviceAction?.action_route?.startsWith("/environment-extensions") ? serviceAction.action_route : "/environment-extensions?tab=services";
   return (
     <StudioPageState error={query.error} isPending={query.isPending}>
       {provider ? (
@@ -282,11 +282,14 @@ type NativeCapabilityUseProps = { dataset: DatasetSummary; providerId: string; r
 
 function nativeCapabilityUsability({ dataset, provider, providerId, service, freshness }: {
   dataset: DatasetSummary;
-  provider: ProviderSummary;
+  provider?: ProviderSummary;
   providerId: string;
   service?: StudioServiceState;
   freshness?: StudioSnapshot["freshness"];
 }): NativeCapabilityUsability {
+  if (!provider) {
+    return { usable: false, state: "unavailable", reason: "当前检查未报告该 Provider。" };
+  }
   const datasetProvider = dataset.providers.find((item) => item.provider_id === providerId);
   const missingCredential = provider.credential_fields.some((field) => field.required && !field.configured);
   if (provider.status === "credential_required" || missingCredential) {

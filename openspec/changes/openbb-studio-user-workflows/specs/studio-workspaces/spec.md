@@ -1,36 +1,41 @@
 ## Purpose
 
-Give users a durable, named boundary for composing OpenBB-native datasets while keeping source identity, field semantics, compatibility evidence, and application state explicit and reviewable.
+Give users a durable, named Workspace source inside the unified Data Sources surface for composing multiple OpenBB-native datasets while keeping source identity, field semantics, compatibility evidence, and application state explicit and reviewable.
 
 ## ADDED Requirements
 
-### Requirement: User-named workspace lifecycle
+### Requirement: User-named Workspace composition
 
-Studio MUST allow a user to create, rename, open, and remove a workspace. A workspace MUST have a stable identifier, a user-provided name, and a list of explicitly attached native dataset members. Workspace metadata MUST NOT contain Provider credentials or secret values.
+Studio MUST allow a user to create, rename, open, and remove a Workspace composition from the unified Data Sources surface. Creating a Workspace MUST require two or more explicitly selected native dataset members. A Workspace MUST have a stable identifier, a user-provided name, and a list of explicitly attached native dataset members. Workspace metadata MUST NOT contain Provider credentials or secret values. A single selected dataset MUST remain a native source rather than being converted into a Workspace.
 
-#### Scenario: Create an empty workspace
-- **WHEN** the user provides a non-empty workspace name
-- **THEN** Studio persists the workspace and opens its empty state
-- **AND** the empty state asks the user to attach a native dataset
-- **AND** no Provider or dataset is silently added
+#### Scenario: Create a Workspace from multiple sources
+- **WHEN** the user selects two or more native datasets in Data Sources, provides a non-empty Workspace name, and confirms Create Workspace
+- **THEN** Studio persists the Workspace and opens its composed-source detail within Data Sources
+- **AND** the Workspace contains exactly the selected Provider/dataset identities
+- **AND** no unselected Provider or dataset is silently added
 
-#### Scenario: Rename a workspace
-- **WHEN** the user changes a workspace name
+#### Scenario: Single source remains native
+- **WHEN** the user selects only one native dataset
+- **THEN** Studio keeps the selection as a native source
+- **AND** Studio does not create a Workspace or imply composition
+
+#### Scenario: Rename a Workspace
+- **WHEN** the user changes a Workspace name
 - **THEN** later navigation and query history use the new name
-- **AND** the workspace identifier and its members, mappings, and evidence remain unchanged
+- **AND** the Workspace identifier and its members, mappings, and evidence remain unchanged
 
-#### Scenario: Remove a workspace
-- **WHEN** the user explicitly removes a workspace
-- **THEN** Studio removes the workspace metadata and its local comparison evidence
+#### Scenario: Remove a Workspace
+- **WHEN** the user explicitly removes a Workspace
+- **THEN** Studio removes the Workspace metadata and its local comparison evidence
 - **AND** the underlying Provider, native dataset, credentials, extension, and OpenBB configuration remain unchanged
 
 ### Requirement: Explicit native dataset membership
 
-A workspace MUST preserve the Provider-native identity of every member, including Provider identifier, native dataset identifier, source paths when available, and the time it was attached. A Provider dataset MUST NOT become a workspace member because of a market label, matching display name, matching field name, or similar response shape.
+A Workspace MUST preserve the Provider-native identity of every member, including Provider identifier, native dataset identifier, source paths when available, and the time it was attached. Workspace membership MUST be managed from the unified Data Sources surface through explicit selection, drag/drop, or Add Data Source actions. A Provider dataset MUST NOT become a Workspace member because of a market label, matching display name, matching field name, or similar response shape.
 
 #### Scenario: Attach a native dataset
-- **WHEN** the user selects a discovered Provider-native dataset and confirms Attach
-- **THEN** Studio adds that exact Provider/dataset identity to the selected workspace
+- **WHEN** the user adds a discovered Provider-native dataset to a selected Workspace in Data Sources and confirms Attach
+- **THEN** Studio adds that exact Provider/dataset identity to the selected Workspace
 - **AND** the member starts in an unverified mapping state
 - **AND** the same native dataset remains queryable from Data Sources and Query
 
@@ -38,6 +43,20 @@ A workspace MUST preserve the Provider-native identity of every member, includin
 - **WHEN** two Providers expose similarly named datasets or fields
 - **THEN** Studio may show them as mapping candidates with evidence
 - **BUT** Studio MUST NOT attach, merge, or mark them compatible without explicit user confirmation
+### Requirement: Distinct composition query modes
+
+A Workspace MUST distinguish source-backed member queries from shared-canonical queries. A source-backed query MAY execute through one explicitly selected usable member without a verified shared mapping. A shared-canonical query MUST remain blocked until mapping, bounded comparison, OpenBB-compatible apply/verify, and version checks pass.
+
+#### Scenario: Source-backed member query remains available
+- **WHEN** a Workspace has at least one usable native member but mapping is draft, blocked, or incompatible
+- **THEN** Studio allows the user to select that member and run a source-backed query
+- **AND** the result identifies the actual Provider/dataset member
+- **AND** Studio does not label the result as a shared canonical Workspace result
+
+#### Scenario: Shared canonical query remains gated
+- **WHEN** a Workspace mapping or comparison is not applied and verified for the current version
+- **THEN** Studio blocks only the shared-canonical query mode
+- **AND** provides mapping, comparison, apply, or repair actions
 
 ### Requirement: Three-scope field mapping
 

@@ -76,7 +76,7 @@ describe('Root Route', () => {
     expect(screen.getByText(/Powered by OpenBB/i)).toBeInTheDocument();
   });
 
-  test('exposes the normal user intents without hiding infrastructure capabilities', async () => {
+  test('exposes only the three normal user intents', async () => {
     const router = createTestRouter('/home');
     await act(async () => {
       render(
@@ -88,16 +88,16 @@ describe('Root Route', () => {
 
     const navigation = screen.getByRole('navigation', { name: '主导航' });
     const links = Array.from(navigation.querySelectorAll('a'));
-    expect(links.map((link) => link.textContent)).toEqual(['首页', '数据源', '扩展', 'Backends', 'Environments', 'API Keys', 'Jupyter', 'Logs']);
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/home', '/data-sources', '/extensions', '/backends', '/environments', '/api-keys', '/environments?section=jupyter', '/diagnostics']);
+    expect(links.map((link) => link.textContent)).toEqual(['首页', '数据源', '环境与扩展']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/home', '/data-sources', '/environment-extensions']);
     expect(screen.getByRole('link', { name: '首页' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('group', { name: 'ODP' })).toBeInTheDocument();
-    for (const legacyLabel of ['查询', '维护', '工作区', '数据目录']) {
+    expect(screen.queryByRole('group', { name: 'ODP' })).not.toBeInTheDocument();
+    for (const legacyLabel of ['查询', '维护', '工作区', '数据目录', 'Backends', 'Environments', 'Extensions', 'Logs']) {
       expect(screen.queryByRole('link', { name: legacyLabel })).not.toBeInTheDocument();
     }
   });
 
-  test('keeps an infrastructure deep link reachable without making it a routine tab', async () => {
+  test('keeps legacy infrastructure deep links reachable without routine tabs', async () => {
     const router = createTestRouter('/backends');
     await act(async () => {
       render(
@@ -107,37 +107,12 @@ describe('Root Route', () => {
       );
     });
     expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '环境与扩展' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('link', { name: 'Backends' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: '高级设置' })).not.toBeInTheDocument();
   });
 
-  test('distinguishes the Jupyter control entry from the Environments entry', async () => {
-    const router = createTestRouter('/environments', '?section=jupyter');
-    await act(async () => {
-      render(
-        <EnvironmentCreationProvider>
-          <RouterProvider router={router} />
-        </EnvironmentCreationProvider>
-      );
-    });
-    expect(screen.getByRole('link', { name: 'Jupyter' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Environments' })).not.toHaveAttribute('aria-current');
-  });
-
-
-  test('keeps navigation visible in Jupyter logs view', async () => {
-    const router = createTestRouter('/jupyter-logs');
-    await act(async () => {
-      render(
-        <EnvironmentCreationProvider>
-          <RouterProvider router={router} />
-        </EnvironmentCreationProvider>
-      );
-    });
-    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Logs' })).toHaveAttribute('aria-current', 'page');
-  });
-
-  test('keeps navigation visible in Backend logs view', async () => {
+  test('maps legacy logs deep links to the combined environment surface', async () => {
     const router = createTestRouter('/backend-logs');
     await act(async () => {
       render(
@@ -146,8 +121,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Backends' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: '环境与扩展' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('hides navigation links in Setup view', async () => {

@@ -1,24 +1,16 @@
 # Page task matrix
 
-Status: provisional; used for task walkthrough before implementation.
-
-| Surface | User question | Primary action | Contextual entry points | Must not require |
+| Surface | User question | Primary action | Contextual routes | Must not require |
 |---|---|---|---|---|
-| Home | What needs attention now? | Add Data Source or resolve the highest-priority issue | recent workspace, service readiness, unresolved mapping/credential/test issue | Provider, Fetcher, Router, Conda, port vocabulary |
-| Workspaces | Which provider-native datasets do I want to treat as one working set? | Create/open workspace or add a member dataset | comparison, canonical fields, mappings, validation, workspace query | prewritten market taxonomy or automatic semantic merge |
-| Data Sources | What did this source actually provide? | Add Data Source, inspect native dataset, map/attach | provider health, credentials, discovered fields, native query | assuming source category from provider name |
-| Query | Can I retrieve and validate the data? | Run Query | native dataset or validated workspace; diagnostics can return to mapping/service repair | Swagger/Jupyter/API knowledge |
-| Advanced | How do I repair or inspect the platform? | Start/Restart/Repair OpenBB or inspect internals | service, runtime, credentials, extensions, API/OpenAPI, logs | entering this area for ordinary add/query flows |
+| 首页 | 这次要启动什么？ | 选择环境、方案、数据源并 Start | 环境与扩展、数据源、服务日志 | Provider/Conda/端口/命令知识 |
+| 数据源 | 我有哪些原生数据源，如何组织？ | 查看、编辑凭证、加入工作区 | 环境与扩展、原生详情 | Provider × API 能力矩阵、第二 Catalog |
+| 环境与扩展 | 如何管理这个环境的运行能力？ | 维护启动方案、服务和可识别扩展 | 原生 Conda/Backends/Jupyter/日志 URL | Advanced、模板、外部 Python 环境 |
 
-## Task-to-surface routing
+## Invariants
 
-- Add a source: Home/Data Sources -> Add Data Source flow -> native dataset discovery -> optionally attach to a workspace.
-- Group two sources: Workspaces -> add both native datasets -> candidate mapping -> user confirmation -> sample comparison -> attach or block.
-- Add a field: Workspaces or Data Sources -> field issue -> provider-specific field or workspace canonical field decision -> mapping validation.
-- Query a source: Data Sources/Workspaces -> Query with context prefilled.
-- Repair service: Home/Query inline action -> one-click Start/Restart/Repair; Advanced only for detail.
-- Inspect OpenBB internals: Advanced; never required for the ordinary workflow.
-
-## Validation questions
-
-Each surface passes a task walkthrough only if its primary action is obvious, its current context is preserved, a failure exposes a next action, and the user can return to the originating workspace/dataset/field without reconstructing selections.
+- 正常导航只有三项；旧 ODP 页面仍可深链但不出现在导航。
+- Start 只执行最终启动项，先服务后前端；部分服务失败不阻止其他项。
+- 运行中的选中服务复用，停止本次不停止复用服务。
+- 启动方案不保存服务配置、数据源或工作区。
+- 原生数据源 identity、凭证状态、实时/缓存/陈旧/失败证据来自 ODP 或持久化状态。
+- 工作区成员关系和批量/路由策略保留；不新增 Query、Catalog、映射引擎或通用协议。

@@ -1482,7 +1482,7 @@ pub async fn initialize_backends<
     E: EnvSystem + Send + Sync + 'static + Clone + Copy,
     FE: FileExtTrait + Send + Sync + 'static + Clone + Copy,
 >(
-    app_handle: &AppHandle,
+    _app_handle: &AppHandle,
     fs: F,
     env_sys: E,
     file_ext: FE,
@@ -1519,55 +1519,12 @@ pub async fn initialize_backends<
     if modified {
         save_backends_config(&backends, &fs, &env_sys, &file_ext)?;
     }
+    // Startup no longer executes legacy Backend auto-start flags. The launcher
+    // selects services explicitly from a persisted startup plan; keeping the
+    // flags in the config preserves migration compatibility without starting
+    // an unselected service before the UI can apply that plan.
+    log::debug!("Skipping legacy backend auto-start flags");
 
-    // Auto-start configured backends
-    for backend in backends.iter() {
-        if backend.auto_start && backend.status == BackendStatus::Stopped.to_string() {
-            log::debug!("Auto-starting backend: {}", backend.name);
-
-            if let Err(validation_error) = validate_command_input(&backend.command, &fs, &env_sys) {
-                log::error!(
-                    "Skipping auto-start of backend '{}' due to dangerous command: {}",
-                    backend.name,
-                    validation_error
-                );
-
-                // Update backend status to error
-                let mut backends_to_update = load_backends_config(&fs, &env_sys)?;
-                if let Some(backend_config) =
-                    backends_to_update.iter_mut().find(|b| b.id == backend.id)
-                {
-                    backend_config.status = BackendStatus::Error.to_string();
-                    backend_config.error = Some(format!(
-                        "Backend could not be started -> {}",
-                        validation_error
-                    ));
-                }
-                if let Err(e) = save_backends_config(&backends_to_update, &fs, &env_sys, &file_ext)
-                {
-                    log::error!("Failed to save backend error status: {}", e);
-                }
-                continue; // Skip this backend
-            }
-
-            // Start the backend - the start_backend_service function will save the real PID, URL and port
-            match start_backend_service_impl(
-                app_handle.clone(),
-                backend.id.clone(),
-                fs,
-                env_sys,
-                file_ext,
-            )
-            .await
-            {
-                Ok(_) => log::debug!("Successfully auto-started backend: {}", backend.name),
-                Err(e) => log::error!("Failed to auto-start backend '{}': {}", backend.name, e),
-            }
-
-            // Add a small delay between starting backends
-            std::thread::sleep(std::time::Duration::from_millis(500));
-        }
-    }
 
     log::debug!("Backend services initialized");
     Ok(())

@@ -1217,7 +1217,7 @@ export default function InstallationProgress() {
 		window.localStorage.setItem("environments-first-load-done", "true");
 		void navigate({
 			to: "/environments",
-			search: { directory, userDataDir },
+			search: { directory, userDataDir, section: undefined },
 		});
 	};
 
@@ -1229,10 +1229,9 @@ export default function InstallationProgress() {
 		// Don't update settings or create backend configs for failed installations
 		// Just navigate to environments so user can see what's available
 		console.warn("Continuing after failed installation - settings not updated");
-		window.localStorage.setItem("environments-first-load-done", "true");
 		void navigate({
 			to: "/environments",
-			search: { directory, userDataDir },
+			search: { directory, userDataDir, section: undefined },
 		});
 	};
 

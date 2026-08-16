@@ -1,101 +1,205 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { z } from "zod";
-import { StudioPageHeader } from "../studio/StudioPageState";
-import { SourceInventoryTable } from "../studio/SourceInventoryTable";
 import { StudioLink } from "../studio/StudioLink";
-import type { StudioSnapshot } from "../studio/contracts";
 import { useStudioState } from "../studio/queries";
 import { useWorkspaceStore } from "../studio/workspace-hooks";
-import { getWorkspaceMemberState, workspaceMemberStateLabel, type Workspace } from "../studio/workspace-store";
-import { odpRecoveryHref } from "../studio/odp-routes";
+import { attachNativeDataset, createWorkspaceFromMembers, removeWorkspace } from "../studio/workspace-store";
+import { ApiKeysPage, type ApiKey, type BuiltInSource, type CredentialSourceGroup } from "./api-keys";
 
-export function DataSourcesPage({ workspaceId }: { workspaceId?: string } = {}) {
+const sourceRef = (sourceId: string, datasetId: string) => ({
+  providerId: sourceId,
+  datasetId,
+  nativePath: null,
+  attachedAt: new Date().toISOString(),
+});
+
+const keyRef = (key: string) => sourceRef(key, "__credential__");
+const builtInRef = (sourceId: string) => sourceRef(sourceId, "__provider__");
+
+type DataSourcesPageProps = {
+  initialCategoryId?: string;
+  /** Legacy URL compatibility; visible UI uses 分类 only. */
+  initialWorkspaceId?: string;
+};
+
+export function DataSourcesPage({ initialCategoryId, initialWorkspaceId }: DataSourcesPageProps = {}) {
   const query = useStudioState();
-  const workspaceStore = useWorkspaceStore();
-  const snapshot = query.data?.snapshot;
-  const activeWorkspace = workspaceId ? workspaceStore.workspaces.find((workspace) => workspace.id === workspaceId) : undefined;
+  const store = useWorkspaceStore();
+  const [scope, setScope] = useState(
+    initialCategoryId || initialWorkspaceId ? `category:${initialCategoryId ?? initialWorkspaceId}` : "all",
+  );
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [targetCategoryId, setTargetCategoryId] = useState("");
 
-  if (query.isPending) {
-    return <section className="m-6 rounded border border-theme-outline bg-theme-primary p-6" role="status"><h1 className="text-xl font-semibold">正在检查数据源</h1><p className="mt-2 text-sm text-theme-muted">正在从 ODP 读取 Provider、数据集/API 身份和当前可用性，请稍候。</p></section>;
+  const builtInSources = useMemo<BuiltInSource[]>(
+    () => (query.data?.snapshot.providers ?? [])
+      .filter((provider) => !provider.credential_fields.some((field) => field.required))
+      .map((provider) => ({ id: provider.id, displayName: provider.display_name })),
+    [query.data?.snapshot.providers],
+  );
+  const credentialSources = useMemo<CredentialSourceGroup[]>(
+    () => (query.data?.snapshot.providers ?? [])
+      .filter((provider) => provider.credential_fields.some((field) => field.required))
+      .map((provider) => ({
+        id: provider.id,
+        displayName: provider.display_name,
+        credentialKeys: provider.credential_fields.filter((field) => field.required).map((field) => field.name),
+      })),
+    [query.data?.snapshot.providers],
+  );
+  const builtInSourceIds = useMemo(() => new Set(builtInSources.map((source) => source.id)), [builtInSources]);
+  const canonicalSourceId = (sourceId: string) =>
+    credentialSources.find((source) => source.id === sourceId || source.credentialKeys.includes(sourceId))?.id ?? sourceId;
+  const sourceStatuses = useMemo<Record<string, string>>(() => {
+    const statuses: Record<string, string> = {};
+    for (const provider of query.data?.snapshot.providers ?? []) {
+      statuses[provider.id] = provider.status;
+      for (const field of provider.credential_fields) statuses[field.name] = provider.status;
+    }
+    return statuses;
+  }, [query.data?.snapshot.providers]);
+
+  const activeCategoryId = scope.startsWith("category:") ? scope.slice("category:".length) : "";
+  const activeCategory = store.workspaces.find((category) => category.id === activeCategoryId);
+  const assignedKeys = useMemo(
+    () => new Set(store.workspaces.flatMap((category) => category.members.map((member) => canonicalSourceId(member.providerId)))),
+    [credentialSources, store.workspaces],
+  );
+  const categoryKeyIds = useMemo(() => {
+    if (scope === "all") return null;
+    if (scope === "unclassified") {
+      return [
+        ...credentialSources.filter((source) => !assignedKeys.has(source.id)).map((source) => source.id),
+        ...apiKeys
+          .filter((key) => !credentialSources.some((source) => source.credentialKeys.includes(key.key)))
+          .filter((key) => !assignedKeys.has(canonicalSourceId(key.key)))
+          .map((key) => key.key),
+        ...builtInSources.filter((source) => !assignedKeys.has(source.id)).map((source) => source.id),
+      ];
+    }
+    return activeCategory?.members.map((member) => canonicalSourceId(member.providerId)) ?? [];
+  }, [activeCategory?.members, apiKeys, assignedKeys, builtInSources, credentialSources, scope]);
+  const currentTitle = activeCategory?.name ?? (scope === "unclassified" ? "未分类" : "全部数据源");
+
+  function sourceRefForId(sourceId: string) {
+    const canonicalId = canonicalSourceId(sourceId);
+    return builtInSourceIds.has(canonicalId) ? builtInRef(canonicalId) : keyRef(canonicalId);
   }
 
-  if (query.error) {
-    return <section className="m-6 rounded border border-red-400 bg-theme-primary p-6" role="alert"><h1 className="text-xl font-semibold">数据源检查失败</h1><p className="mt-2 text-sm text-theme-muted">{query.error.message}</p><div className="mt-4 flex flex-wrap gap-4 text-sm"><button className="text-theme-accent" onClick={() => void query.refetch()} type="button">重新检查</button><StudioLink className="text-theme-accent" href="/diagnostics">打开 ODP Logs</StudioLink></div></section>;
+  function createCategory(): void {
+    try {
+      const category = createWorkspaceFromMembers(name, [...selectedKeys].map(sourceRefForId));
+      setName("");
+      setSelectedKeys(new Set());
+      setCreating(false);
+      setScope(`category:${category.id}`);
+      setMessage(`已创建分类：${category.name}`);
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : String(cause));
+    }
   }
+
+  function addToCategory(): void {
+    const categoryId = activeCategory?.id || targetCategoryId;
+    const category = store.workspaces.find((item) => item.id === categoryId);
+    if (!category) return;
+    for (const sourceId of selectedKeys) attachNativeDataset(category.id, sourceRefForId(sourceId));
+    setSelectedKeys(new Set());
+    setMessage(`已加入分类：${category.name}`);
+  }
+
+  if (query.isPending) return <main className="mx-auto w-full max-w-6xl py-6" role="status">正在读取数据源…</main>;
+  if (!query.data) return <main className="mx-auto w-full max-w-4xl py-6" role="alert"><h1 className="text-xl font-semibold">数据源检查失败</h1><p className="mt-2 text-sm text-theme-muted">{query.error instanceof Error ? query.error.message : "无法读取数据源。"}</p><button className="mt-3 text-sm text-theme-accent" onClick={() => void query.refetch()} type="button">重新检查</button></main>;
+
+  const freshness = query.data.snapshot.freshness;
+  const serviceUnavailable = query.data.service.state !== "running";
+  const evidenceLabel = serviceUnavailable
+    ? "数据服务未运行，来源状态暂不可确认。"
+    : freshness.status === "stale" ? "当前显示缓存来源，等待刷新。"
+      : freshness.status === "failed" ? "实时来源检查失败，请重新检查。"
+        : freshness.status === "empty" ? "检查完成，当前没有数据源。"
+          : "数据源已同步。";
 
   return (
-      <div className="mx-auto w-full max-w-6xl overflow-auto py-6">
-        <StudioPageHeader
-          title="数据源"
-          description="原生和组合数据源共用这份实时清单。每个来源保留准确的 Provider、数据集/API 身份，并从这里进入使用、详情或组合。"
-          action={<Link className="rounded bg-theme-accent px-4 py-2 text-sm text-theme-primary-inverse" to="/extensions">通过 Extensions 添加</Link>}
-        />
-        {snapshot ? (
-          <>
-            <InventoryEvidence onRefresh={() => void query.refetch()} serviceState={query.data?.service.state} snapshot={snapshot} />
-            <SourceInventoryTable serviceState={query.data?.service.state} snapshot={snapshot} />
-          </>
-        ) : (
-          <section className="mt-5 rounded border border-theme-outline bg-theme-primary p-6" role="status">
-            <h2 className="font-semibold">数据源清单暂不可用</h2>
-            <p className="mt-2 text-sm text-theme-muted">当前还没有从 ODP 读取到可确认的数据源身份。请检查 Backends 后返回重新读取。</p>
-            <StudioLink className="mt-4 inline-block text-sm text-theme-accent" href="/backends">打开 ODP Backends</StudioLink>
-          </section>
-        )}
-        {activeWorkspace && snapshot && <CompositionSourceDetail serviceState={query.data?.service.state} snapshot={snapshot} workspace={activeWorkspace} />}
+    <div className="mx-auto w-full max-w-7xl overflow-auto py-4">
+      <header className="flex items-end justify-between gap-4 border-b border-theme-outline pb-3">
+        <h1 className="text-2xl font-semibold">数据源</h1>
+        <div className="flex gap-3">
+          <StudioLink className="text-sm text-theme-accent" href="/environment-extensions?tab=extensions">安装扩展</StudioLink>
+          <button className="rounded bg-theme-accent px-3 py-2 text-sm text-theme-primary-inverse" onClick={() => { setCreating(true); setName(""); setMessage(""); }} type="button">新建分类</button>
+        </div>
+      </header>
+      <div className={`flex items-center justify-between gap-4 border-b border-theme-outline py-1.5 text-sm ${freshness.status === "failed" ? "text-theme-danger" : "text-theme-muted"}`} role={freshness.status === "failed" ? "alert" : "status"}>
+        <span>{evidenceLabel}</span>
+        <span className="flex gap-3">
+          {(serviceUnavailable || freshness.status === "failed" || freshness.status === "stale") && <button className="text-theme-accent" onClick={() => void query.refetch()} type="button">重新检查</button>}
+          {serviceUnavailable && <StudioLink className="text-theme-accent" href="/environment-extensions?tab=services">检查服务</StudioLink>}
+        </span>
       </div>
-  );
-}
 
-function CompositionSourceDetail({ workspace, snapshot, serviceState }: { workspace: Workspace; snapshot: StudioSnapshot; serviceState?: "running" | "stopped" | "error" }) {
-  return (
-    <section className="mt-8 border-t border-theme-outline pt-6" aria-labelledby="composition-detail-heading">
-      <p className="text-sm font-medium text-theme-accent">组合数据源详情</p>
-      <h2 className="mt-1 text-xl font-semibold" id="composition-detail-heading">{workspace.name}</h2>
-      <p className="mt-1 text-sm text-theme-muted">此处只展示已保存的准确成员身份和当前 ODP 可用性；成员维护与路由不在本入口中执行。</p>
-      <div className="mt-4 divide-y divide-theme-outline rounded border border-theme-outline bg-theme-primary">
-        {workspace.members.map((member) => {
-          const state = getWorkspaceMemberState(member, snapshot, serviceState);
-          return (
-            <article className="grid gap-2 p-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto]" key={`${member.providerId}:${member.datasetId}`}>
-              <div className="min-w-0">
-                <strong className="break-all">{member.providerId} / {member.datasetId}</strong>
-                <p className="mt-1 break-all text-xs text-theme-muted">Native path: {member.nativePath ?? "未报告"}</p>
-              </div>
-              <span className="text-theme-muted">{workspaceMemberStateLabel(state)}</span>
-            </article>
-          );
-        })}
-        {!workspace.members.length && <p className="p-4 text-sm text-theme-muted">这个组合数据源尚未保存任何成员。</p>}
+      <div className="mt-3 grid gap-4 lg:grid-cols-[13rem_minmax(0,1fr)]">
+        <aside className="border-r border-theme-outline pr-4" aria-label="数据源分类">
+          <nav className="space-y-1">
+            <button className={`block w-full rounded px-3 py-2 text-left text-sm ${scope === "all" ? "bg-theme-tertiary font-medium" : "hover:bg-theme-secondary"}`} onClick={() => { setScope("all"); setSelectedKeys(new Set()); }} type="button">全部数据源</button>
+            <button className={`block w-full rounded px-3 py-2 text-left text-sm ${scope === "unclassified" ? "bg-theme-tertiary font-medium" : "hover:bg-theme-secondary"}`} onClick={() => { setScope("unclassified"); setSelectedKeys(new Set()); }} type="button">未分类</button>
+            {store.workspaces.length > 0 && <p className="px-3 pb-1 pt-3 text-xs font-semibold text-theme-muted">分类</p>}
+            {store.workspaces.map((category) => <button className={`block w-full truncate rounded px-3 py-2 text-left text-sm ${activeCategoryId === category.id ? "bg-theme-tertiary font-medium" : "hover:bg-theme-secondary"}`} key={category.id} onClick={() => { setScope(`category:${category.id}`); setSelectedKeys(new Set()); }} title={category.name} type="button">{category.name}</button>)}
+          </nav>
+        </aside>
+
+        <main className="min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+            <h2 className="font-semibold">{currentTitle}</h2>
+            <div className="flex gap-3 text-sm">
+              {selectedKeys.size > 0 && store.workspaces.length > 0 && <>
+                <select aria-label="目标分类" className="rounded border border-theme-outline bg-theme-primary px-2 py-1" onChange={(event) => setTargetCategoryId(event.target.value)} value={activeCategory?.id || targetCategoryId}>
+                  <option value="">选择分类</option>
+                  {store.workspaces.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+                <button className="text-theme-accent disabled:opacity-50" disabled={!(activeCategory?.id || targetCategoryId)} onClick={addToCategory} type="button">加入分类</button>
+              </>}
+              {selectedKeys.size > 0 && <button className="text-theme-accent" onClick={() => setCreating(true)} type="button">用所选创建分类</button>}
+              {activeCategory && <button className="text-theme-danger" onClick={() => { removeWorkspace(activeCategory.id); setScope("all"); }} type="button">删除分类</button>}
+            </div>
+          </div>
+
+          <ApiKeysPage
+            embedded
+            categoryKeyIds={categoryKeyIds}
+            builtInSources={builtInSources}
+            credentialSources={credentialSources}
+            sourceStatuses={sourceStatuses}
+            selectable
+            selectedKeyNames={selectedKeys}
+            onKeysChange={setApiKeys}
+            onSelectedKeyNamesChange={setSelectedKeys}
+          />
+          {message && <p className="mt-2 text-sm text-theme-accent" role="status">{message}</p>}
+        </main>
       </div>
-    </section>
-  );
-}
 
-function InventoryEvidence({ snapshot, serviceState, onRefresh }: { snapshot: StudioSnapshot; serviceState?: "running" | "stopped" | "error"; onRefresh: () => void }) {
-  const freshness = snapshot.freshness;
-  const inspectedAt = freshness.inspected_at ? new Date(freshness.inspected_at).toLocaleString("zh-CN") : "尚未完成";
-  if (serviceState !== "running") {
-    return <section className="mt-5 rounded border border-amber-400 bg-theme-primary p-4" role="status"><h2 className="font-semibold">ODP 服务不可用</h2><p className="mt-1 text-sm text-theme-muted">清单中的身份会保留，但当前不能据此确认来源可用。最近检查：{inspectedAt}。</p><StudioLink className="mt-3 inline-block text-sm text-theme-accent" href="/backends">打开 ODP Backends</StudioLink></section>;
-  }
-  if (freshness.status === "failed") {
-    return <section className="mt-5 rounded border border-red-400 bg-theme-primary p-4" role="alert"><h2 className="font-semibold">实时数据源检查失败</h2><p className="mt-1 text-sm text-theme-muted">{freshness.error?.message ?? "ODP 未能完成本次数据源检查。"} 当前清单可能来自旧证据。</p><div className="mt-3 flex flex-wrap gap-4 text-sm"><button className="text-theme-accent" onClick={onRefresh} type="button">重新检查</button><StudioLink className="text-theme-accent" href={odpRecoveryHref(freshness.error?.action_route, "/diagnostics")}>打开负责的 ODP 控制</StudioLink></div></section>;
-  }
-  if (freshness.status === "stale") {
-    return <section className="mt-5 rounded border border-amber-400 bg-theme-primary p-4" role="status"><h2 className="font-semibold">数据源状态待刷新</h2><p className="mt-1 text-sm text-theme-muted">当前显示缓存身份；最近检查于 {inspectedAt}，不把它声明为实时可用。</p><button className="mt-3 text-sm text-theme-accent" onClick={onRefresh} type="button">重新检查</button></section>;
-  }
-  if (freshness.status === "empty") {
-    return <section className="mt-5 rounded border border-theme-outline bg-theme-primary p-4" role="status"><h2 className="font-semibold">实时检查完成，但没有数据源</h2><p className="mt-1 text-sm text-theme-muted">ODP 已于 {inspectedAt} 成功完成检查。可通过 Extensions 添加 Provider 后重新发现。</p><StudioLink className="mt-3 inline-block text-sm text-theme-accent" href="/extensions">打开 Extensions</StudioLink></section>;
-  }
-  return <p className="mt-5 text-sm text-theme-muted" role="status">实时 ODP 检查 · {inspectedAt}</p>;
+      {creating && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" role="dialog" aria-modal="true" aria-labelledby="category-form-title"><form className="w-full max-w-sm rounded border border-theme-outline bg-theme-primary p-5" onSubmit={(event) => { event.preventDefault(); createCategory(); }}><h2 className="text-lg font-semibold" id="category-form-title">新建分类</h2><label className="mt-4 block text-sm">名称<input aria-label="分类名称" autoFocus className="mt-1 w-full rounded border border-theme-outline bg-theme-secondary px-3 py-2" onChange={(event) => setName(event.target.value)} required value={name} /></label><div className="mt-5 flex justify-end gap-3"><button className="text-sm text-theme-muted" onClick={() => setCreating(false)} type="button">取消</button><button className="rounded bg-theme-accent px-3 py-2 text-sm text-theme-primary-inverse" type="submit">创建分类</button></div></form></div>}
+    </div>
+  );
 }
 
 function DataSourcesRoute() {
-  const { workspaceId } = Route.useSearch();
-  return <DataSourcesPage workspaceId={workspaceId} />;
+  const { categoryId, workspaceId } = Route.useSearch();
+  return <DataSourcesPage initialCategoryId={categoryId} initialWorkspaceId={workspaceId} />;
 }
 
 export const Route = createFileRoute("/data-sources/")({
-  validateSearch: z.object({ workspaceId: z.string().optional(), intent: z.enum(["use", "compose"]).optional(), source: z.string().optional() }),
+  validateSearch: z.object({
+    categoryId: z.string().optional(),
+    /** Legacy URL compatibility. */
+    workspaceId: z.string().optional(),
+    intent: z.enum(["use", "compose"]).optional(),
+    source: z.string().optional(),
+  }),
   component: DataSourcesRoute,
 });

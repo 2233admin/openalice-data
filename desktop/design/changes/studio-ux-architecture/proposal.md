@@ -1,13 +1,21 @@
-# Proposal: studio-ux-architecture
+# Proposal: OpenAlice Data shell and ODP boundary
 
 ## Why
 
-The project needs a requirements-driven reusable DESIGN.md before implementation.
+The fork currently exposes ODP control-plane routes without a clear human-facing boundary between OpenAlice tasks and original ODP functions.
 
 ## Problem
 
-为 OpenBB Studio 设计面向普通用户的数据源接入、业务数据分类、Provider 覆盖比较、公共字段与来源特有字段对齐、查询验证和 OpenBB 基础运行能力的最小用户友好信息架构；优先解决真实用户阻塞点和 ADHD 友好工作流，不做视觉风格设计，不把项目退化为凭证状态面板或后台管理模板。
+Users need a simple way to find and choose data sources, explicitly compose similar sources, and install missing Providers. The current design over-expanded the solution into Query, Advanced, Workspace, mapping, and compatibility concepts that are not required by the ODP baseline or the confirmed product direction.
+
+## Proposed boundary
+
+- OpenAlice surfaces: Home, Data Sources, Extensions.
+- ODP surface: original Backends, Environments, API Keys, Jupyter, and Logs grouped under `ODP`.
+- Native data sources remain directly usable.
+- Composed data sources are optional persisted collections with explicit members and existing routing behavior.
+- Query is an action delegated to existing ODP/OpenBB capabilities, not a new page or engine.
 
 ## Safety
 
-Reference sites and templates are attributed evidence, not product authority or copy targets.
+OpenBB/ODP capabilities remain authoritative. This design does not create a second Provider registry, query engine, runtime manager, package manager, semantic mapping system, or Workspace product.

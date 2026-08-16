@@ -68,7 +68,7 @@ function Base() {
       {loading && (
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">正在启动 OpenAlice Data Platform</h1>
-          <p className="text-gray-600">Checking installation status...</p>
+          <p className="text-gray-600">正在检查安装状态…</p>
         </div>
       )}
     </div>

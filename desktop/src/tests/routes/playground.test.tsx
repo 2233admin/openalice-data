@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { vi } from "vitest";
+import { beforeEach, vi } from "vitest";
 import { PlaygroundPage } from "../../routes/playground";
 import { useStudioState } from "../../studio/queries";
 
@@ -33,6 +33,17 @@ function mockStudioState(serviceState: "running" | "stopped") {
 }
 
 describe("Playground", () => {
+  beforeEach(() => {
+    window.history.replaceState({}, "", "/query?dataset=equity.price.historical&provider=yfinance");
+  });
+  it("requires an explicit dataset and Provider target", () => {
+    window.history.replaceState({}, "", "/query");
+    vi.mocked(useStudioState).mockReturnValue(mockStudioState("running"));
+    render(<PlaygroundPage />);
+    expect(screen.getByRole("heading", { name: "请先选择数据源" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "运行查询" })).not.toBeInTheDocument();
+  });
+
   it("builds Registry fields, calls the active API, and displays rows", async () => {
     vi.mocked(useStudioState).mockReturnValue(mockStudioState("running"));
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ results: [{ symbol: "AAPL", close: 100 }] }), { status: 200 })));

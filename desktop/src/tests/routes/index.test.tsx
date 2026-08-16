@@ -39,7 +39,7 @@ describe('Index Route', () => {
   test('displays loading message initially', () => {
     render(<IndexComponent />);
     expect(screen.getByText(/正在启动 OpenAlice Data Platform/i)).toBeInTheDocument();
-    expect(screen.getByText(/Checking installation status.../i)).toBeInTheDocument();
+    expect(screen.getByText(/正在检查安装状态/)).toBeInTheDocument();
   });
 
   test('redirects to /home if installed via event', async () => {

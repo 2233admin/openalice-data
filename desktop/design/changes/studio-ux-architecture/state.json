@@ -2,7 +2,8 @@
   "blockers": [],
   "changeId": "studio-ux-architecture",
   "evidence": [
-    "design/changes/studio-ux-architecture/qa.md"
+    "design/changes/studio-ux-architecture/qa.md",
+    "design/changes/studio-ux-architecture/toolchain-plan.json"
   ],
   "extensions": {
     "legacy": {
@@ -67,13 +68,18 @@
   "foundations": {
     "design": {
       "path": "DESIGN.md",
-      "sha256": "e699c5b203105c760729ca73948583fd0d056ac67c2f517c566459be468c4a7e",
+      "sha256": "5ea2506ab172a1cef5ffa8048e7780631b32770c67510b139caaeda43763ba14",
       "status": "ready",
-      "validator": null
+      "validator": "designer-pipeline foundation check --kind design"
     },
-    "motion": null
+    "motion": {
+      "path": "MOTION.md",
+      "sha256": "0cfca3c3f67be1d102300ec1637089a10ec9cc07d812dd0c86446075686fd490",
+      "status": "ready",
+      "validator": "designer-pipeline foundation check --kind motion"
+    }
   },
-  "lastEventSeq": 4,
+  "lastEventSeq": 5,
   "migration": {
     "sourceNextField": "nextActions",
     "sourcePhaseField": "phase",
@@ -82,13 +88,14 @@
     "sourceStatus": "in-progress"
   },
   "nextActions": [
-    "Archive this change after the user reviews the documented limitations."
+    "Implement GitHub ticket #11 for composed-source routing and persistence.",
+    "Keep #12 recovery/Extensions handoff and #13 legacy cleanup separate."
   ],
   "phase": "release-readiness",
   "registryVersion": "design-pipeline.phases.v2",
-  "revision": 4,
+  "revision": 5,
   "sceneRuntime": null,
   "schema": "design-pipeline.state.v2",
   "status": "ready",
-  "updatedAt": "2026-08-14T20:00:38.737Z"
+  "updatedAt": "2026-08-16T06:07:19.000Z"
 }

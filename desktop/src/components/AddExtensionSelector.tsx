@@ -22,28 +22,28 @@ interface ExtensionCategory {
 const categories: ExtensionCategory[] = [
   {
     id: "conda",
-    name: "Conda Packages",
-    description: "Specify Conda packages to install in the environment, optionally with a channel (e.g., conda-forge, <channel-name>) and version specifiers.",
+    name: "Conda 包",
+    description: "选择要安装到当前环境的 Conda 包。",
   },
   {
     id: "extras",
-    name: "PyPI Packages",
-    description: "Packages from PyPI to be installed (pip) in the environment. Use version specifiers as needed (e.g., package==1.2.3 or package>=1.2.3).",
+    name: "Python 包",
+    description: "输入要安装到当前环境的 Python 包及版本。",
   },
   {
     id: "provider",
-    name: "Data Providers",
-    description: "Data providers supplying data through the OpenBB provider interface.",
+    name: "数据源扩展",
+    description: "由 ODP 安装器提供的数据源扩展。",
   },
   {
     id: "router",
-    name: "Routers",
-    description: "API paths and endpoints implementing the OpenBB command interface.",
+    name: "路由扩展",
+    description: "由 ODP 安装器提供的路由扩展。",
   },
   {
     id: "other-openbb",
-    name: "Others",
-    description: "Additional OpenBB extensions, including OBBject extensions, that enhance the functionality of the OpenBB platform.",
+    name: "其他 OpenBB 扩展",
+    description: "其他 OpenBB 扩展安装单元。",
   },
 ];
 
@@ -123,7 +123,7 @@ export const AddExtensionSelector = ({
   onCancel,
   excludeCategories = [],
 }: {
-  onInstallExtensions: (extensionIds: string[]) => void;
+  onInstallExtensions: (extensionIds: string[]) => void | Promise<void>;
   installedPackages?: Set<string>;
   onCancel?: () => void;
   excludeCategories?: string[];
@@ -409,8 +409,9 @@ export const AddExtensionSelector = ({
 
       console.log("Installing extensions:", extensionsToInstall);
 
-      // Call installation and wait for completion
-      onInstallExtensions(extensionsToInstall);
+      // Await the owner callback so its service restart and rediscovery state
+      // remains visible while this selector is in its installing state.
+      await onInstallExtensions(extensionsToInstall);
 
       console.log("Extension installation completed successfully");
     } catch (error) {

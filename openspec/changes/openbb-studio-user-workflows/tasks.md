@@ -1,4 +1,6 @@
 ## 1. Live OpenBB inspection and contracts
+Status: implementation checklist frozen pending acceptance of `desktop/design/changes/studio-ux-architecture/requirements.md`. Do not treat the old Home action-item wording below as a product decision.
+
 
 - [x] 1.1 Extend the Studio snapshot contract with explicit freshness, service state, Provider credential metadata, declared response fields, and normalized action states.
 - [x] 1.2 Extend the existing Tauri Studio inspection adapter to read live OpenBB OpenAPI/coverage data and registry-backed credential names without returning secret values.
@@ -7,10 +9,10 @@
 
 ## 2. User-facing information architecture
 
-- [x] 2.1 Migrate the normal shell to Home, Workspaces, Data Sources, Query, and Advanced while preserving existing detail and repair capabilities.
+- [ ] 2.1 Migrate the normal shell to Home, unified Data Sources, Query, and Advanced while preserving existing detail and repair capabilities.
 - [x] 2.2 Move Backends, Environments, API credentials, Extensions, API/OpenAPI, Configuration, and Logs behind Advanced sections with deep-linkable recovery routes.
-- [x] 2.3 Make Home render live action items from the Studio snapshot and recent activity, with one primary next action and preserved entity context.
-- [x] 2.4 Add route-level tests for the five intents, action routing, empty states, loading states, and Advanced handoffs.
+- [ ] 2.3 Make Home render native and composition targets, frontend selection, one explicit Start action, recent target context, and target-scoped recovery without blocker-first routing.
+- [ ] 2.4 Add route-level tests for the four intents, unified source selection/composition, target/frontend routing, empty states, loading states, and Advanced handoffs.
 
 ## 3. P0 source inventory and native query
 
@@ -20,13 +22,13 @@
 - [x] 3.4 Implement diagnostic classification and secret redaction for request errors, response details, activity records, and copied usage evidence.
 - [x] 3.5 Add UI and managed-OpenBB tests for credential-required, service-stopped, successful native query, warnings, malformed response, and provider failure paths.
 
-## 4. P0 workspace foundation
+## 4. P0 Workspace composition inside Data Sources
 
 - [x] 4.1 Add a versioned Studio workspace store using the existing desktop local persistence pattern, with migration handling and no credential fields.
-- [x] 4.2 Implement workspace create, rename, open, and remove flows with stable identifiers and explicit empty states.
-- [x] 4.3 Implement explicit attachment of Provider-native dataset references without inferred or silent membership.
+- [x] 4.2 Implement Workspace creation-from-selection, rename, open, and remove flows with stable identifiers and explicit empty states inside Data Sources.
+- [x] 4.3 Implement explicit attachment of Provider-native dataset references through multi-select, drag/drop, and Add Data Source without inferred or silent membership.
 - [x] 4.4 Show native member provenance and stale/unavailable source state when the underlying Provider or service changes.
-- [x] 4.5 Add workspace store, lifecycle, attachment, reload, and source-change regression tests.
+- [x] 4.5 Add Workspace store, unified Data Sources composition, lifecycle, attachment, reload, and source-change regression tests.
 
 ## 5. P1 field mapping and compatibility
 

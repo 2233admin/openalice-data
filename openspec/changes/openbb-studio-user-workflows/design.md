@@ -5,7 +5,7 @@ See `proposal.md` for motivation. The repository already contains a partial Stud
 - `loadStudioState` selects a managed OpenBB backend/runtime, calls `inspect_studio_environment`, loads extensions, and validates a `StudioSnapshot` with Zod.
 - `desktop/src-tauri/src/tauri_handlers/studio.rs` reads the managed OpenBB `/openapi.json`, `/api/v1/coverage/providers`, and `/api/v1/coverage/commands` endpoints. It currently derives Provider and dataset summaries, but data fields, Provider credential metadata, and action states are incomplete.
 - Data Sources, Provider details, Data Catalog, Extensions, Home, and Playground already exist. Playground calls the current OpenBB REST endpoint directly and records redacted local activity.
-- The root navigation still exposes infrastructure concepts (`Backends`, `Environments`, `API Keys`, and raw logs) as peers of normal user workflows.
+- The root navigation still exposes infrastructure concepts (`Backends`, `Environments`, `API Keys`, and raw logs) as peers of normal user workflows, and the current shell treats Workspaces as a separate primary destination.
 - OpenBB's Provider registry, `ProviderInterface`, credential map, Fetcher `transform_data`, declared standard models, REST/OpenAPI coverage, extension build, and service lifecycle remain the implementation authority. Studio must not create a second Provider framework, query engine, runtime manager, or financial data model.
 - The requirements document makes field mapping P1 and new dataset/Router Builder P2. This change therefore defines the complete contract and interfaces, but implementation tasks must keep P0 source/query workflows separate from P1 mapping and leave P2 generation as an explicit boundary.
 
@@ -80,23 +80,22 @@ CompatibilityReport
 
 Credentials, tokens, headers, cookies, and raw API responses are excluded from these records.
 
-### 4. Separate native source flow from workspace composition
+### 4. Unify Workspace composition inside Data Sources
 
-Data Sources remains the source inventory and native dataset catalog. Workspaces is the semantic composition surface. Attaching a dataset stores the exact Provider/dataset identity and starts an unverified state. The same native dataset may be attached to multiple workspaces. No attachment is inferred from labels or registry proximity.
+Data Sources is the single normal-mode source inventory. It shows Provider-native sources and composed Workspace sources in one selection model. A Workspace is a user-created composition boundary, not a separate top-level route or catalog category. Attaching a dataset stores the exact Provider/dataset identity and starts an unverified state. The same native dataset may be attached to multiple Workspaces. No attachment is inferred from labels or registry proximity.
 
 The canonical normal-mode route structure is:
 
 ```text
 /home
-/workspaces
-/workspaces/:workspaceId
-/data-sources              (Providers + native catalog)
-/data-sources/:providerId
-/query                     (native dataset or verified workspace)
+/data-sources              (Providers + native datasets + composed Workspaces)
+/data-sources/providers/:providerId
+/data-sources/workspaces/:workspaceId
+/query                     (native dataset or verified Workspace)
 /advanced                  (services, runtimes, credentials, extensions, API, logs)
 ```
 
-Existing detail routes may remain addressable while the shell is migrated, but the normal navigation must expose only the five user intents. Infrastructure sections remain reachable through Advanced and preserve their current commands.
+The normal navigation exposes only four user intents: Home, Data Sources, Query, and Advanced. Provider and Workspace detail routes remain nested under Data Sources and do not create competing primary navigation. Infrastructure sections remain reachable through Advanced and preserve their current commands.
 
 ### 5. Make mapping three-scoped and evidence-first
 
@@ -147,15 +146,15 @@ mapping         -> Workspace mapping/comparison
 upstream        -> Provider diagnostics and retry
 ```
 
-### 8. Keep P0 and P1 implementation gates explicit
+### 8. Keep P0, P1, and composition gates explicit
 
 P0 implementation order:
 
 1. Live source inspector and truthful state adapter.
-2. Five-intent shell with Home action routing and Advanced preservation.
-3. Data Sources, native catalog, Provider credentials/health, Extensions, and native Query.
+2. Four-intent shell with Home action routing and Advanced preservation.
+3. Unified Data Sources inventory with native sources, Provider credentials/health, Extensions, and native Query.
 4. Query diagnostics, redaction, activity, and managed OpenBB verification.
-5. Workspace persistence, creation, naming, and explicit native member attachment.
+5. Workspace persistence, multi-selection creation, naming, explicit native member attachment, drag/drop add, and in-place member management inside Data Sources.
 
 P1 implementation order:
 
@@ -170,7 +169,7 @@ P2 Dataset/Router/Provider generation is not implemented; only the interface bou
 
 - Zod/domain contract tests reject malformed inspector, workspace, mapping, and compatibility records.
 - Studio client tests verify runtime selection, truthful stopped/error states, no invented source data, and actionable failure routes.
-- UI tests cover five-intent navigation, source details, credential save/test, native query, workspace lifecycle, mapping gates, diagnostics, and Advanced handoff.
+- UI tests cover four-intent navigation, unified native/Workspace source selection and composition, source details, credential save/test, native query, mapping gates, diagnostics, and Advanced handoff.
 - Tauri handler tests cover OpenAPI/coverage parsing, Provider credential metadata redaction, unknown/stale handling, and error propagation.
 - The opt-in managed OpenBB test runs a real native query and, when mapping support is available, a workspace verification query. It is skipped without `OPENBB_STUDIO_API_URL` and must not be used as the only proof for pure UI behavior.
 

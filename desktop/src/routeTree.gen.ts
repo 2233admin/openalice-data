@@ -17,8 +17,10 @@ import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as JupyterLogsRouteImport } from './routes/jupyter-logs'
 import { Route as InstallationProgressRouteImport } from './routes/installation-progress'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as FrontendsRouteImport } from './routes/frontends'
 import { Route as ExtensionsRouteImport } from './routes/extensions'
 import { Route as EnvironmentsRouteImport } from './routes/environments'
+import { Route as EnvironmentExtensionsRouteImport } from './routes/environment-extensions'
 import { Route as DiagnosticsRouteImport } from './routes/diagnostics'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as DataCatalogRouteImport } from './routes/data-catalog'
@@ -73,6 +75,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FrontendsRoute = FrontendsRouteImport.update({
+  id: '/frontends',
+  path: '/frontends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExtensionsRoute = ExtensionsRouteImport.update({
   id: '/extensions',
   path: '/extensions',
@@ -81,6 +88,11 @@ const ExtensionsRoute = ExtensionsRouteImport.update({
 const EnvironmentsRoute = EnvironmentsRouteImport.update({
   id: '/environments',
   path: '/environments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnvironmentExtensionsRoute = EnvironmentExtensionsRouteImport.update({
+  id: '/environment-extensions',
+  path: '/environment-extensions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiagnosticsRoute = DiagnosticsRouteImport.update({
@@ -158,8 +170,10 @@ export interface FileRoutesByFullPath {
   '/data-catalog': typeof DataCatalogRoute
   '/data-sources': typeof DataSourcesRouteWithChildren
   '/diagnostics': typeof DiagnosticsRoute
+  '/environment-extensions': typeof EnvironmentExtensionsRoute
   '/environments': typeof EnvironmentsRoute
   '/extensions': typeof ExtensionsRoute
+  '/frontends': typeof FrontendsRoute
   '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
@@ -182,8 +196,10 @@ export interface FileRoutesByTo {
   '/backends': typeof BackendsRoute
   '/data-catalog': typeof DataCatalogRoute
   '/diagnostics': typeof DiagnosticsRoute
+  '/environment-extensions': typeof EnvironmentExtensionsRoute
   '/environments': typeof EnvironmentsRoute
   '/extensions': typeof ExtensionsRoute
+  '/frontends': typeof FrontendsRoute
   '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
@@ -207,8 +223,10 @@ export interface FileRoutesById {
   '/data-catalog': typeof DataCatalogRoute
   '/data-sources': typeof DataSourcesRouteWithChildren
   '/diagnostics': typeof DiagnosticsRoute
+  '/environment-extensions': typeof EnvironmentExtensionsRoute
   '/environments': typeof EnvironmentsRoute
   '/extensions': typeof ExtensionsRoute
+  '/frontends': typeof FrontendsRoute
   '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
@@ -234,8 +252,10 @@ export interface FileRouteTypes {
     | '/data-catalog'
     | '/data-sources'
     | '/diagnostics'
+    | '/environment-extensions'
     | '/environments'
     | '/extensions'
+    | '/frontends'
     | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
@@ -258,8 +278,10 @@ export interface FileRouteTypes {
     | '/backends'
     | '/data-catalog'
     | '/diagnostics'
+    | '/environment-extensions'
     | '/environments'
     | '/extensions'
+    | '/frontends'
     | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
@@ -282,8 +304,10 @@ export interface FileRouteTypes {
     | '/data-catalog'
     | '/data-sources'
     | '/diagnostics'
+    | '/environment-extensions'
     | '/environments'
     | '/extensions'
+    | '/frontends'
     | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
@@ -308,8 +332,10 @@ export interface RootRouteChildren {
   DataCatalogRoute: typeof DataCatalogRoute
   DataSourcesRoute: typeof DataSourcesRouteWithChildren
   DiagnosticsRoute: typeof DiagnosticsRoute
+  EnvironmentExtensionsRoute: typeof EnvironmentExtensionsRoute
   EnvironmentsRoute: typeof EnvironmentsRoute
   ExtensionsRoute: typeof ExtensionsRoute
+  FrontendsRoute: typeof FrontendsRoute
   HomeRoute: typeof HomeRoute
   InstallationProgressRoute: typeof InstallationProgressRoute
   JupyterLogsRoute: typeof JupyterLogsRoute
@@ -378,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/frontends': {
+      id: '/frontends'
+      path: '/frontends'
+      fullPath: '/frontends'
+      preLoaderRoute: typeof FrontendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/extensions': {
       id: '/extensions'
       path: '/extensions'
@@ -390,6 +423,13 @@ declare module '@tanstack/react-router' {
       path: '/environments'
       fullPath: '/environments'
       preLoaderRoute: typeof EnvironmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/environment-extensions': {
+      id: '/environment-extensions'
+      path: '/environment-extensions'
+      fullPath: '/environment-extensions'
+      preLoaderRoute: typeof EnvironmentExtensionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/diagnostics': {
@@ -525,8 +565,10 @@ const rootRouteChildren: RootRouteChildren = {
   DataCatalogRoute: DataCatalogRoute,
   DataSourcesRoute: DataSourcesRouteWithChildren,
   DiagnosticsRoute: DiagnosticsRoute,
+  EnvironmentExtensionsRoute: EnvironmentExtensionsRoute,
   EnvironmentsRoute: EnvironmentsRoute,
   ExtensionsRoute: ExtensionsRoute,
+  FrontendsRoute: FrontendsRoute,
   HomeRoute: HomeRoute,
   InstallationProgressRoute: InstallationProgressRoute,
   JupyterLogsRoute: JupyterLogsRoute,

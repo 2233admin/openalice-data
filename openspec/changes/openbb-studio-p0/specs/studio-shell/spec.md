@@ -1,4 +1,6 @@
 ## Purpose
+Status: SUPERSEDED. Historical shell acceptance only; active Home/Query/Advanced requirements are in `desktop/design/changes/studio-ux-architecture/requirements.md`.
+
 
 Provides a user-facing Desktop shell that leads with data-source actions while preserving all original ODP operational controls for advanced use.
 

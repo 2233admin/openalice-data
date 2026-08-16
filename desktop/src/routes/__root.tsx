@@ -9,25 +9,13 @@ export const Route = createRootRoute({ component: RootWithProvider });
 const openAliceNavigation = [
 	{ to: "/home", label: "首页" },
 	{ to: "/data-sources", label: "数据源" },
+	{ to: "/environment-extensions", label: "环境与扩展" },
 ] as const;
 
-const odpNavigation = [
-	{ to: "/backends", label: "Backends", activeKey: "/backends" },
-	{ to: "/environments", label: "Environments", activeKey: "/environments" },
-	{ to: "/api-keys", label: "API Keys", activeKey: "/api-keys" },
-	{ to: "/environments?section=jupyter", label: "Jupyter", activeKey: "/jupyter" },
-	{ to: "/diagnostics", label: "Logs", activeKey: "/diagnostics" },
-] as const;
-
-
-function activeIntent(pathname: string, search: string) {
+function activeIntent(pathname: string, _search: string) {
 	if (pathname === "/home") return "/home";
 	if (pathname === "/data-sources" || pathname.startsWith("/data-sources/") || pathname === "/data-catalog" || pathname === "/workspaces" || pathname.startsWith("/workspaces/")) return "/data-sources";
-	if (pathname === "/extensions") return "/extensions";
-	if (pathname === "/backends" || pathname === "/backend-logs") return "/backends";
-	if (pathname === "/environments") return search.includes("section=jupyter") ? "/jupyter" : "/environments";
-	if (pathname === "/api-keys") return "/api-keys";
-	if (pathname === "/diagnostics" || pathname === "/jupyter-logs") return "/diagnostics";
+	if (pathname === "/environment-extensions" || pathname === "/extensions" || pathname === "/frontends" || pathname === "/backends" || pathname === "/backend-logs" || pathname === "/environments" || pathname === "/api-keys" || pathname === "/diagnostics" || pathname === "/jupyter-logs") return "/environment-extensions";
 	return "";
 }
 
@@ -86,13 +74,7 @@ function Root() {
 						{openAliceNavigation.map(({ to, label }) => (
 							<NavLink key={to} to={to} active={selectedIntent === to}>{label}</NavLink>
 						))}
-						<NavLink to="/extensions" active={selectedIntent === "/extensions"}>扩展</NavLink>
-						<div className="flex items-end gap-1 border-l border-theme-outline pl-3" role="group" aria-label="ODP">
-							<span className="px-1 pb-2 text-sm font-medium text-theme-primary">ODP</span>
-							{odpNavigation.map(({ to, label, activeKey }) => (
-								<NavLink key={label} to={to} active={selectedIntent === activeKey}>{label}</NavLink>
-							))}
-						</div>
+
 					</nav>
 				)}
 			</div>

@@ -117,19 +117,19 @@ Ignore all of the warning messages for now, we'll clean those up later.
 
 ## OpenBB Studio
 
-The normal desktop workflow is organized around five user intents:
-Home, Workspaces, Data Sources, Query, and Advanced. Extensions and
-Diagnostics are direct support destinations. The Home action center shows the
-live OpenBB API and OpenBB MCP services together, with one handoff to
-`/backends` for choosing which services to start; runtime, credential,
-extension-internal, and log tools remain available through Advanced rather than
-being removed.
+The normal desktop workflow is organized around four user intents:
+Home, Data Sources, Query, and Advanced. Data Sources is the single normal-mode
+source surface: it contains Provider-native sources and composed Workspace
+sources. Extensions and Diagnostics are direct support destinations. Home lets
+the user choose one source target or begin a multi-selection composition, then
+choose a frontend and Start; runtime, credential, extension-internal, and log
+tools remain available through Advanced rather than being removed.
 
 `/data-sources/add` is the dedicated Provider installation flow. Its official
 Provider catalog is a shortcut, not a restriction: custom Providers, PyPI
 packages, Conda packages, routers, and other OpenBB extensions remain available
 through the original `/extensions` installer. Credentials, capability
-inspection, and testing continue in the selected data source.
+inspection, and testing continue in the selected native source.
 
 The Studio state adapter in `src/studio/client.ts` selects the managed OpenBB
 runtime and calls the existing Tauri `inspect_studio_environment` command.
@@ -138,10 +138,10 @@ names come from the OpenBB `ProviderInterface.credentials` registry bridge and
 only configured booleans are returned. Provider-native dataset identity and
 declared schema fields remain the source of truth.
 
-Workspaces are versioned, local, allow-listed records in
+Workspace sources are versioned, local, allow-listed records in
 `src/studio/workspace-store.ts`. They contain explicit Provider-native dataset
-references and mapping evidence, never credentials or secret values. P1
-mapping, comparison, apply, and compatibility gates are represented as
+members, availability and mapping evidence, never credentials or secret values.
+P1 mapping, comparison, apply, and compatibility gates are represented as
 contracts; P2 Dataset/Router/Provider generation remains an explicit handoff
 to the existing OpenBB build and registry path.
 
