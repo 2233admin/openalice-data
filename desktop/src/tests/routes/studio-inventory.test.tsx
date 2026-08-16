@@ -39,7 +39,10 @@ vi.mock("../../studio/client", async () => {
 });
 vi.mock("../../studio/queries", () => ({ studioStateQueryKey: ["studio", "state"], useStudioState: vi.fn() }));
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: vi.fn() }));
-vi.mock("../../studio/actions", () => ({ saveProviderCredentials: vi.fn() }));
+vi.mock("../../studio/actions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../studio/actions")>();
+  return { ...actual, saveProviderCredentials: vi.fn() };
+});
 
 const state = {
   runtime: "openbb",
@@ -82,6 +85,20 @@ const state = {
   },
 };
 
+const usableState = {
+  ...state,
+  service: { state: "running", backend: { id: "openbb-api", url: "http://127.0.0.1:6900" } },
+  snapshot: {
+    ...state.snapshot,
+    providers: [{
+      ...state.snapshot.providers[0],
+      status: "available",
+      state_description: "凭证已配置，代表性查询可用。",
+      credential_fields: [{ ...state.snapshot.providers[0].credential_fields[0], configured: true }],
+    }],
+  },
+};
+
 beforeEach(() => {
   localStorage.clear();
   window.history.replaceState({}, "", "/data-sources");
@@ -110,6 +127,177 @@ describe("Studio inventories", () => {
     expect(screen.getByRole("link", { name: "通过 Extensions 添加" })).toHaveAttribute("href", "/extensions");
     expect(screen.getByRole("link", { name: "Historical" })).toHaveAttribute("href", "/data-sources/fmp?dataset=equity.price.historical");
     expect(document.querySelector('a[href^="/query"]')).not.toBeInTheDocument();
+  });
+
+  it("opens the only live native capability directly inside source detail", () => {
+    vi.mocked(useStudioState).mockReturnValue({ data: usableState, isPending: false, error: null, refetch: vi.fn() } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    expect(screen.getByRole("heading", { name: "使用 Historical" })).toBeInTheDocument();
+    expect(screen.getByText("Provider: fmp · Dataset/API: equity.price.historical · /api/v1/equity/price/historical")).toBeInTheDocument();
+    expect(screen.getByText("可用性: available · 已加载")).toBeInTheDocument();
+  });
+
+  it("enters native capability use when same-route navigation adds the use intent", async () => {
+    vi.mocked(useStudioState).mockReturnValue({ data: usableState, isPending: false, error: null, refetch: vi.fn() } as never);
+    const view = render(<ProviderDetailPage providerId="fmp" routeSearch={{}} />);
+    expect(screen.getByRole("heading", { name: "Provider 概览" })).toBeInTheDocument();
+    view.rerender(<ProviderDetailPage providerId="fmp" routeSearch={{ dataset: "equity.price.historical", intent: "use" }} />);
+    expect(await screen.findByRole("heading", { name: "使用 Historical" })).toBeInTheDocument();
+  });
+
+  it("builds a bounded source-use form from the inspected capability schema", () => {
+    vi.mocked(useStudioState).mockReturnValue({ data: usableState, isPending: false, error: null, refetch: vi.fn() } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    expect(screen.getByRole("textbox", { name: "symbol *" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("准备就绪");
+  });
+
+  it("does not present a credential-blocked native capability as ready to run", () => {
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    expect(screen.getByRole("status")).toHaveTextContent("需要凭证");
+    expect(screen.queryByRole("button", { name: "使用数据能力" })).not.toBeInTheDocument();
+  });
+
+  it("keeps an available exact capability usable when the Provider aggregate is partial", () => {
+    vi.mocked(useStudioState).mockReturnValue({
+      data: {
+        ...usableState,
+        snapshot: {
+          ...usableState.snapshot,
+          providers: [{ ...usableState.snapshot.providers[0], status: "partial", state_description: "其他能力检查失败。" }],
+        },
+      },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    expect(screen.getByRole("status")).toHaveTextContent("准备就绪");
+    expect(screen.getByRole("button", { name: "使用数据能力" })).toBeInTheDocument();
+  });
+
+  it("asks the user to choose when a native source has several live capabilities", () => {
+    vi.mocked(useStudioState).mockReturnValue({
+      data: {
+        ...usableState,
+        snapshot: {
+          ...usableState.snapshot,
+          providers: [{ ...usableState.snapshot.providers[0], capability_count: 2, capabilities: ["equity.price.historical", "equity.price.quote"] }],
+          datasets: [...usableState.snapshot.datasets, {
+            ...usableState.snapshot.datasets[0],
+            id: "equity.price.quote",
+            display_name: "Quote",
+            api_path: "/api/v1/equity/price/quote",
+          }],
+        },
+      },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    expect(screen.getByRole("heading", { name: "选择 FMP 的数据能力" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("正在选择数据能力");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByRole("link", { name: "Historical" })).toHaveAttribute("href", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    expect(screen.getByRole("link", { name: "Quote" })).toHaveAttribute("href", "/data-sources/fmp?dataset=equity.price.quote&intent=use");
+  });
+
+  it("runs a supported capability through the existing OpenBB action and shows its result", async () => {
+    let resolveResponse: ((response: Response) => void) | undefined;
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { resolveResponse = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.mocked(useStudioState).mockReturnValue({
+      data: usableState,
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    fireEvent.change(screen.getByRole("textbox", { name: "symbol *" }), { target: { value: "AAPL" } });
+    const submit = screen.getByRole("button", { name: "使用数据能力" });
+    fireEvent.click(submit);
+    expect(screen.getByRole("status")).toHaveTextContent("正在准备");
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("正在运行"));
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(submit).toBeDisabled();
+    resolveResponse?.(new Response(JSON.stringify({ results: [{ symbol: "AAPL", close: 198.5 }] }), { status: 200 }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("使用成功"));
+    expect(screen.getByText("请求 /api/v1/equity/price/historical · 返回 1 行")).toBeInTheDocument();
+    expect(screen.getByText(/198.5/)).toBeInTheDocument();
+  });
+
+  it("reports rejected native capability parameters as invalid and keeps safe input for retry", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: "symbol is invalid" }), { status: 422 })));
+    vi.mocked(useStudioState).mockReturnValue({
+      data: usableState,
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    const symbol = screen.getByRole("textbox", { name: "symbol *" });
+    fireEvent.change(symbol, { target: { value: "NOT-A-SYMBOL" } });
+    fireEvent.click(screen.getByRole("button", { name: "使用数据能力" }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("输入无效"));
+    expect(symbol).toHaveValue("NOT-A-SYMBOL");
+  });
+
+  it("reports native capability runtime failures and keeps safe input for retry", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: "service unavailable" }), { status: 503 })));
+    vi.mocked(useStudioState).mockReturnValue({
+      data: usableState,
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    const symbol = screen.getByRole("textbox", { name: "symbol *" });
+    fireEvent.change(symbol, { target: { value: "AAPL" } });
+    fireEvent.click(screen.getByRole("button", { name: "使用数据能力" }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("使用失败"));
+    expect(symbol).toHaveValue("AAPL");
+  });
+
+  it("hands unsupported capability schemas to the existing ODP/OpenBB consumer without guessing fields", () => {
+    vi.mocked(useStudioState).mockReturnValue({
+      data: { ...usableState, snapshot: { ...usableState.snapshot, datasets: [{ ...usableState.snapshot.datasets[0], response_fields: null }] } },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    expect(screen.getByRole("link", { name: "在现有 ODP/OpenBB 消费端打开" })).toHaveAttribute("href", "/query?dataset=equity.price.historical&provider=fmp");
+    expect(screen.queryByRole("button", { name: "使用数据能力" })).not.toBeInTheDocument();
+  });
+
+  it("never renders credential-like capability parameters as inline inputs", () => {
+    vi.mocked(useStudioState).mockReturnValue({
+      data: {
+        ...usableState,
+        snapshot: {
+          ...usableState.snapshot,
+          datasets: [{ ...usableState.snapshot.datasets[0], common_query_fields: [{ name: "api_key", type: "str", required: true }] }],
+        },
+      },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+    window.history.replaceState({}, "", "/data-sources/fmp?dataset=equity.price.historical&intent=use");
+    render(<ProviderDetailPage providerId="fmp" />);
+    expect(screen.getByRole("link", { name: "在 ODP API Keys 中管理凭证" })).toHaveAttribute("href", "/api-keys");
+    expect(screen.queryByRole("link", { name: "在现有 ODP/OpenBB 消费端打开" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /api_key/i })).not.toBeInTheDocument();
   });
 
   it("shows native and composed sources together with exact persisted member identities", () => {
