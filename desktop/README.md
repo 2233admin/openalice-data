@@ -4,6 +4,10 @@ OpenAlice Desktop 基于 OpenBB 发布的 Open Data Platform Desktop 源码，�
 环境、扩展、API Keys、REST/MCP 后端与 JupyterLab 管理。OpenBB 原始版权、许可证
 与归属信息继续保留；OpenAlice 与 OpenBB 官方不存在赞助、背书或隶属关系。
 
+Desktop 管理的 CLI、REST、MCP、Jupyter 与 Provider 共享同一个 Python 环境；
+启动链和 Windows 验收方式见
+[`DESKTOP_RUNTIME_TOOLCHAIN.zh-CN.md`](../docs/DESKTOP_RUNTIME_TOOLCHAIN.zh-CN.md)。
+
 测试安装包发布在
 [OpenAlice Releases](https://github.com/2233admin/openalice-data/releases)。当前 Windows
 Beta 为未签名构建，Windows SmartScreen 可能提示未知发布者。
@@ -110,6 +114,84 @@ This will start the development server and watch for changes to the codebase. Mo
 If you use a browser, instead of the window, to view the development server there will be stuff that just doesn't work. This is expected.
 
 Ignore all of the warning messages for now, we'll clean those up later.
+
+## OpenBB Studio
+
+The normal desktop workflow is organized around four user intents:
+Home, Data Sources, Query, and Advanced. Data Sources is the single normal-mode
+source surface: it contains Provider-native sources and composed Workspace
+sources. Extensions and Diagnostics are direct support destinations. Home lets
+the user choose one source target or begin a multi-selection composition, then
+choose a frontend and Start; runtime, credential, extension-internal, and log
+tools remain available through Advanced rather than being removed.
+
+`/data-sources/add` is the dedicated Provider installation flow. Its official
+Provider catalog is a shortcut, not a restriction: custom Providers, PyPI
+packages, Conda packages, routers, and other OpenBB extensions remain available
+through the original `/extensions` installer. Credentials, capability
+inspection, and testing continue in the selected native source.
+
+The Studio state adapter in `src/studio/client.ts` selects the managed OpenBB
+runtime and calls the existing Tauri `inspect_studio_environment` command.
+The Rust adapter reads the live OpenAPI and coverage endpoints; credential
+names come from the OpenBB `ProviderInterface.credentials` registry bridge and
+only configured booleans are returned. Provider-native dataset identity and
+declared schema fields remain the source of truth.
+
+Workspace sources are versioned, local, allow-listed records in
+`src/studio/workspace-store.ts`. They contain explicit Provider-native dataset
+members, availability and mapping evidence, never credentials or secret values.
+P1 mapping, comparison, apply, and compatibility gates are represented as
+contracts; P2 Dataset/Router/Provider generation remains an explicit handoff
+to the existing OpenBB build and registry path.
+
+Native query execution remains in `src/studio/actions.ts` and uses the
+existing OpenBB REST API. Query history and diagnostics preserve the selected
+dataset/Provider, safe submitted inputs, warnings, duration, row counts, and
+redacted raw/error evidence.
+
+### Verification
+
+From `desktop/`:
+
+```sh
+npm run test -- --run
+npm run build
+```
+
+For a managed OpenBB integration run, set `OPENBB_STUDIO_API_URL` and run the
+opt-in integration test:
+
+```sh
+OPENBB_STUDIO_API_URL=http://127.0.0.1:6900 npm run test -- --run src/tests/integration/studio-real-provider.test.ts
+```
+
+The Rust tests require a Windows OpenSSL installation exposed through
+`OPENSSL_DIR`, `OPENSSL_INCLUDE_DIR`, and `OPENSSL_LIB_DIR`. Browser previews
+do not provide Tauri commands and therefore show the runtime recovery state;
+use `npm run tauri dev` for the complete desktop flow.
+
+Known P0 limitation: workspace mapping and apply/build integration are not
+implemented yet. The UI preserves native sources and fails closed until the
+P1 validation boundary is available.
+
+### Dependency and license note
+
+The Studio UI adds these npm dependencies and no Rust dependencies:
+
+- `@tanstack/react-query` 5.101.4 — MIT
+- `@tanstack/react-table` 8.21.3 — MIT
+- `@tanstack/react-virtual` 3.14.9 — MIT
+- `echarts` 6.1.0 — Apache-2.0
+
+It also reuses these MIT-licensed packages already present in `package.json`:
+
+- `@tanstack/react-router` 1.168.13
+- `react-hook-form` 7.72.1
+- `zod` 3.25.76
+
+The versions and license metadata above are from the installed package
+manifests; the complete transitive inventory remains `package-lock.json`.
 
 
 ### Helpful VS Code Extension

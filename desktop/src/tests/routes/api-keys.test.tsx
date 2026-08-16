@@ -75,41 +75,76 @@ describe('ApiKeysPage', () => {
   test('shows empty state', async () => {
     mockCredentials = {};
     render(<ApiKeysPage />);
-    await waitFor(() => expect(screen.getByText(/No API keys added/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/还没有配置 API 密钥/)).toBeInTheDocument());
   });
 
   test('add and save new API key', async () => {
     mockCredentials = {};
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     render(<ApiKeysPage />);
-    await waitFor(() => expect(screen.getByText(/No API keys added/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/还没有配置 API 密钥/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /Add New Key/i }));
+    fireEvent.click(screen.getByRole('button', { name: /添加密钥/i }));
 
-    await screen.findByText('Add API Key');
+    await screen.findByText('添加 API 密钥');
 
     fireEvent.change(screen.getByPlaceholderText('api_key_name'), { target: { value: 'NEW_KEY' } });
-    fireEvent.change(screen.getByPlaceholderText('Enter your API key'), { target: { value: 'new_value' } });
+    fireEvent.change(screen.getByPlaceholderText('输入 API 密钥'), { target: { value: 'new_value' } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加' }));
 
     await waitFor(() => {
       expect(vi.mocked(invoke)).toHaveBeenCalledWith('update_user_credentials', { credentials: { NEW_KEY: 'new_value' } });
     });
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'studio-credentials-updated' }));
+    dispatchSpy.mockRestore();
 
     await waitFor(() => {
         expect(screen.getByText('NEW_KEY')).toBeInTheDocument();
     });
   });
+  test('renders credential fields as one editable data source row', async () => {
+    mockCredentials = { FMP_API_KEY: 'old-key', FMP_SECRET: 'old-secret' };
+    render(
+      <ApiKeysPage
+        credentialSources={[{
+          id: 'fmp',
+          displayName: 'FMP',
+          credentialKeys: ['FMP_API_KEY', 'FMP_SECRET'],
+        }]}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('FMP')).toBeInTheDocument());
+    expect(screen.queryByText('FMP_API_KEY')).not.toBeInTheDocument();
+    expect(screen.getByText('2/2 项凭证')).toBeInTheDocument();
+
+    const row = screen.getByText('FMP').closest('.group');
+    expect(row).not.toBeNull();
+    fireEvent.click(row!.querySelector('button')!);
+
+    await screen.findByText('编辑 FMP');
+    const fields = screen.getAllByPlaceholderText('输入凭证值');
+    expect(fields).toHaveLength(2);
+    fireEvent.change(fields[0], { target: { value: 'new-key' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(vi.mocked(invoke)).toHaveBeenCalledWith('update_user_credentials', {
+        credentials: { FMP_API_KEY: 'new-key', FMP_SECRET: 'old-secret' },
+      });
+    });
+  });
 
   test('add button is disabled if API key name is empty', async () => {
     render(<ApiKeysPage />);
-    await screen.findByText(/No API keys added/i);
+    await screen.findByText(/还没有配置 API 密钥/);
 
-    fireEvent.click(screen.getByRole('button', { name: /Add New Key/i }));
+    fireEvent.click(screen.getByRole('button', { name: /添加密钥/i }));
 
-    await screen.findByText('Add API Key');
+    await screen.findByText('添加 API 密钥');
 
-    const addButton = screen.getByRole('button', { name: 'Add' });
+    const addButton = screen.getByRole('button', { name: '添加' });
     expect(addButton).toBeDisabled();
 
     fireEvent.change(screen.getByPlaceholderText('api_key_name'), { target: { value: 'some-key' } });
@@ -121,17 +156,17 @@ describe('ApiKeysPage', () => {
     render(<ApiKeysPage />);
     await screen.findByText('DUPLICATE_KEY');
 
-    fireEvent.click(screen.getByRole('button', { name: /Add New Key/i }));
+    fireEvent.click(screen.getByRole('button', { name: /添加密钥/i }));
 
-    await screen.findByText('Add API Key');
+    await screen.findByText('添加 API 密钥');
 
     fireEvent.change(screen.getByPlaceholderText('api_key_name'), { target: { value: 'DUPLICATE_KEY' } });
-    fireEvent.change(screen.getByPlaceholderText('Enter your API key'), { target: { value: 'value2' } });
+    fireEvent.change(screen.getByPlaceholderText('输入 API 密钥'), { target: { value: 'value2' } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加' }));
 
     await waitFor(() => {
-      expect(message).toHaveBeenCalledWith('An API key with this name already exists.', expect.any(Object));
+      expect(message).toHaveBeenCalledWith('已存在同名 API 密钥。', expect.any(Object));
     });
   });
 
@@ -148,9 +183,9 @@ describe('ApiKeysPage', () => {
     expect(editButton).not.toBeNull();
     fireEvent.click(editButton!);
 
-    await screen.findByText('Edit API Key');
+    await screen.findByText('编辑 API 密钥');
 
-    const deleteButton = screen.getByRole('button', { name: 'Delete' });
+    const deleteButton = screen.getByRole('button', { name: '删除' });
     fireEvent.click(deleteButton);
 
     await waitFor(() => {
@@ -189,7 +224,7 @@ describe('ApiKeysPage', () => {
       expect(screen.getByText('KEY2')).toBeInTheDocument();
     });
 
-    const searchInput = screen.getByPlaceholderText('Search API Keys...');
+    const searchInput = screen.getByPlaceholderText('搜索密钥...');
     fireEvent.change(searchInput, { target: { value: 'KEY1' } });
 
     await waitFor(() => {
@@ -204,19 +239,19 @@ describe('ApiKeysPage', () => {
 
     fireEvent.click(screen.getByTestId('settings-button'));
 
-    await screen.findByText(/Configuration Files/i);
+    await screen.findByText(/配置文件/);
     expect(screen.getByLabelText('user_settings.json')).toBeChecked();
 
-    fireEvent.click(screen.getByRole('button', { name: /Open File/i }));
+    fireEvent.click(screen.getByRole('button', { name: /打开文件/ }));
     expect(vi.mocked(invoke)).toHaveBeenLastCalledWith('open_credentials_file', { fileName: 'user_settings.json' });
 
-    await waitFor(() => expect(screen.queryByText(/Configuration Files/i)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText(/配置文件/)).not.toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('settings-button'));
-    await screen.findByText(/Configuration Files/i);
+    await screen.findByText(/配置文件/);
 
     fireEvent.click(screen.getByLabelText('system_settings.json'));
-    fireEvent.click(screen.getByRole('button', { name: /Open File/i }));
+    fireEvent.click(screen.getByRole('button', { name: /打开文件/ }));
     expect(vi.mocked(invoke)).toHaveBeenLastCalledWith('open_credentials_file', { fileName: 'system_settings.json' });
   });
 
@@ -228,7 +263,7 @@ describe('ApiKeysPage', () => {
 
     expect(vi.mocked(invoke)).toHaveBeenCalledWith('open_url_in_window', {
       url: 'https://docs.openbb.co/desktop/api_keys',
-      title: 'Open Data Platform Documentation',
+      title: 'API 密钥文档',
     });
   });
 

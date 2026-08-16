@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed runtime verification for an OpenAlice Data Beta deployment."""
+"""Fail-closed runtime verification for an OpenAlice OpenBB deployment."""
 
 from __future__ import annotations
 
@@ -27,28 +27,28 @@ def _text(url: str, timeout: float) -> str:
 
 
 def verify(base_url: str, wait_seconds: int) -> dict[str, Any]:
-    """Verify readiness, dashboard packaging, and non-empty real market data."""
+    """Verify OpenBB readiness, provider coverage, and non-empty market data."""
     base = base_url.rstrip("/")
-    health_url = f"{base}/api/v1/data/health"
+    health_url = f"{base}/api/v1/coverage/providers"
     deadline = time.monotonic() + wait_seconds
     last_error = "service did not become ready"
     health: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         try:
             candidate = _json(health_url, timeout=4)
-            if candidate.get("status") == "ok":
+            if "ashare" in candidate and "yfinance" in candidate:
                 health = candidate
                 break
-            last_error = f"health status is {candidate.get('status')!r}"
+            last_error = "required ashare/yfinance providers are not registered"
         except (OSError, URLError, TimeoutError, ValueError) as exc:
             last_error = f"{type(exc).__name__}: {exc}"
         time.sleep(2)
     if health is None:
         raise RuntimeError(last_error)
+    landing_page = _text(f"{base}/", timeout=10)
+    if "OpenBB" not in landing_page:
+        raise RuntimeError("OpenBB landing page marker is missing")
 
-    dashboard = _text(f"{base}/api/v1/data/", timeout=10)
-    if '<html lang="zh-CN">' not in dashboard or "OpenAlice Data" not in dashboard:
-        raise RuntimeError("Chinese dashboard marker is missing")
 
     parameters = {
         "symbol": "AAPL",
@@ -66,8 +66,8 @@ def verify(base_url: str, wait_seconds: int) -> dict[str, Any]:
         "status": "passed",
         "checked_at": datetime.now(UTC).isoformat(),
         "base_url": base,
-        "health": health,
-        "dashboard": {"language": "zh-CN", "bytes": len(dashboard.encode())},
+        "providers": sorted(health),
+        "landing_page": {"bytes": len(landing_page.encode())},
         "real_data": {
             "provider": quote.get("provider"),
             "parameters": parameters,

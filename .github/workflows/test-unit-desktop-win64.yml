@@ -3,7 +3,7 @@ name: Test Windows x64
 on:
   pull_request:
     branches:
-      - develop
+      - main
     paths:
       - 'desktop/**'
 

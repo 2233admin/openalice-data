@@ -1,5 +1,9 @@
 # OpenAlice Data Hub 基础组件决策
 
+> 适用性说明（2026-08-13）：本文只描述可选 `openalice_data` 扩展的内部实现。
+> OpenAlice 默认产品已重新锚定为“完整 OpenBB Fork + 中国及亚洲市场 Provider
+> 包 + 必要中文本地化”，Data Hub 不再是默认部署入口。
+
 决策者：仓库维护者；日期：2026-08-10；结论：扩展完整 OpenBB Fork，采用 Arrow/DuckDB 查询本地数据，自写最小目录与 PIT 契约胶水。
 
 ## 问题与边界

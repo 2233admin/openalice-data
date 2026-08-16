@@ -1,0 +1,15 @@
+{
+  "schema": "design-pipeline.direction-preview.v1",
+  "changeId": "studio-ux-architecture",
+  "applicability": {
+    "status": "waived",
+    "reason": "non-visual"
+  },
+  "comparison": null,
+  "directions": [],
+  "decision": {
+    "status": "waived",
+    "selectedDirectionId": null,
+    "rationale": "This round reconciles functional information architecture, states, evidence, and recovery routes on the established OpenAlice Studio visual foundation; it does not select a new visual direction."
+  }
+}

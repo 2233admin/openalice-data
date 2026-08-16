@@ -9,14 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkspacesRouteImport } from './routes/workspaces'
 import { Route as UninstallRouteImport } from './routes/uninstall'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as QueryRouteImport } from './routes/query'
 import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as JupyterLogsRouteImport } from './routes/jupyter-logs'
 import { Route as InstallationProgressRouteImport } from './routes/installation-progress'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as FrontendsRouteImport } from './routes/frontends'
 import { Route as ExtensionsRouteImport } from './routes/extensions'
 import { Route as EnvironmentsRouteImport } from './routes/environments'
+import { Route as EnvironmentExtensionsRouteImport } from './routes/environment-extensions'
+import { Route as DiagnosticsRouteImport } from './routes/diagnostics'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as DataCatalogRouteImport } from './routes/data-catalog'
 import { Route as BackendsRouteImport } from './routes/backends'
@@ -24,8 +29,17 @@ import { Route as BackendLogsRouteImport } from './routes/backend-logs'
 import { Route as ApiKeysRouteImport } from './routes/api-keys'
 import { Route as AdvancedRouteImport } from './routes/advanced'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorkspacesIndexRouteImport } from './routes/workspaces.index'
+import { Route as DataSourcesIndexRouteImport } from './routes/data-sources.index'
+import { Route as WorkspacesWorkspaceIdRouteImport } from './routes/workspaces.$workspaceId'
+import { Route as DataSourcesAddRouteImport } from './routes/data-sources.add'
 import { Route as DataSourcesProviderIdRouteImport } from './routes/data-sources.$providerId'
 
+const WorkspacesRoute = WorkspacesRouteImport.update({
+  id: '/workspaces',
+  path: '/workspaces',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UninstallRoute = UninstallRouteImport.update({
   id: '/uninstall',
   path: '/uninstall',
@@ -34,6 +48,11 @@ const UninstallRoute = UninstallRouteImport.update({
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QueryRoute = QueryRouteImport.update({
+  id: '/query',
+  path: '/query',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlaygroundRoute = PlaygroundRouteImport.update({
@@ -56,6 +75,11 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FrontendsRoute = FrontendsRouteImport.update({
+  id: '/frontends',
+  path: '/frontends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExtensionsRoute = ExtensionsRouteImport.update({
   id: '/extensions',
   path: '/extensions',
@@ -64,6 +88,16 @@ const ExtensionsRoute = ExtensionsRouteImport.update({
 const EnvironmentsRoute = EnvironmentsRouteImport.update({
   id: '/environments',
   path: '/environments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnvironmentExtensionsRoute = EnvironmentExtensionsRouteImport.update({
+  id: '/environment-extensions',
+  path: '/environment-extensions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticsRoute = DiagnosticsRouteImport.update({
+  id: '/diagnostics',
+  path: '/diagnostics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataSourcesRoute = DataSourcesRouteImport.update({
@@ -101,6 +135,26 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkspacesIndexRoute = WorkspacesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorkspacesRoute,
+} as any)
+const DataSourcesIndexRoute = DataSourcesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DataSourcesRoute,
+} as any)
+const WorkspacesWorkspaceIdRoute = WorkspacesWorkspaceIdRouteImport.update({
+  id: '/$workspaceId',
+  path: '/$workspaceId',
+  getParentRoute: () => WorkspacesRoute,
+} as any)
+const DataSourcesAddRoute = DataSourcesAddRouteImport.update({
+  id: '/add',
+  path: '/add',
+  getParentRoute: () => DataSourcesRoute,
+} as any)
 const DataSourcesProviderIdRoute = DataSourcesProviderIdRouteImport.update({
   id: '/$providerId',
   path: '/$providerId',
@@ -115,15 +169,24 @@ export interface FileRoutesByFullPath {
   '/backends': typeof BackendsRoute
   '/data-catalog': typeof DataCatalogRoute
   '/data-sources': typeof DataSourcesRouteWithChildren
+  '/diagnostics': typeof DiagnosticsRoute
+  '/environment-extensions': typeof EnvironmentExtensionsRoute
   '/environments': typeof EnvironmentsRoute
   '/extensions': typeof ExtensionsRoute
+  '/frontends': typeof FrontendsRoute
   '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
   '/playground': typeof PlaygroundRoute
+  '/query': typeof QueryRoute
   '/setup': typeof SetupRoute
   '/uninstall': typeof UninstallRoute
+  '/workspaces': typeof WorkspacesRouteWithChildren
   '/data-sources/$providerId': typeof DataSourcesProviderIdRoute
+  '/data-sources/add': typeof DataSourcesAddRoute
+  '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
+  '/data-sources/': typeof DataSourcesIndexRoute
+  '/workspaces/': typeof WorkspacesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,16 +195,23 @@ export interface FileRoutesByTo {
   '/backend-logs': typeof BackendLogsRoute
   '/backends': typeof BackendsRoute
   '/data-catalog': typeof DataCatalogRoute
-  '/data-sources': typeof DataSourcesRouteWithChildren
+  '/diagnostics': typeof DiagnosticsRoute
+  '/environment-extensions': typeof EnvironmentExtensionsRoute
   '/environments': typeof EnvironmentsRoute
   '/extensions': typeof ExtensionsRoute
+  '/frontends': typeof FrontendsRoute
   '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
   '/playground': typeof PlaygroundRoute
+  '/query': typeof QueryRoute
   '/setup': typeof SetupRoute
   '/uninstall': typeof UninstallRoute
   '/data-sources/$providerId': typeof DataSourcesProviderIdRoute
+  '/data-sources/add': typeof DataSourcesAddRoute
+  '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
+  '/data-sources': typeof DataSourcesIndexRoute
+  '/workspaces': typeof WorkspacesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,15 +222,24 @@ export interface FileRoutesById {
   '/backends': typeof BackendsRoute
   '/data-catalog': typeof DataCatalogRoute
   '/data-sources': typeof DataSourcesRouteWithChildren
+  '/diagnostics': typeof DiagnosticsRoute
+  '/environment-extensions': typeof EnvironmentExtensionsRoute
   '/environments': typeof EnvironmentsRoute
   '/extensions': typeof ExtensionsRoute
+  '/frontends': typeof FrontendsRoute
   '/home': typeof HomeRoute
   '/installation-progress': typeof InstallationProgressRoute
   '/jupyter-logs': typeof JupyterLogsRoute
   '/playground': typeof PlaygroundRoute
+  '/query': typeof QueryRoute
   '/setup': typeof SetupRoute
   '/uninstall': typeof UninstallRoute
+  '/workspaces': typeof WorkspacesRouteWithChildren
   '/data-sources/$providerId': typeof DataSourcesProviderIdRoute
+  '/data-sources/add': typeof DataSourcesAddRoute
+  '/workspaces/$workspaceId': typeof WorkspacesWorkspaceIdRoute
+  '/data-sources/': typeof DataSourcesIndexRoute
+  '/workspaces/': typeof WorkspacesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,15 +251,24 @@ export interface FileRouteTypes {
     | '/backends'
     | '/data-catalog'
     | '/data-sources'
+    | '/diagnostics'
+    | '/environment-extensions'
     | '/environments'
     | '/extensions'
+    | '/frontends'
     | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
     | '/playground'
+    | '/query'
     | '/setup'
     | '/uninstall'
+    | '/workspaces'
     | '/data-sources/$providerId'
+    | '/data-sources/add'
+    | '/workspaces/$workspaceId'
+    | '/data-sources/'
+    | '/workspaces/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -189,16 +277,23 @@ export interface FileRouteTypes {
     | '/backend-logs'
     | '/backends'
     | '/data-catalog'
-    | '/data-sources'
+    | '/diagnostics'
+    | '/environment-extensions'
     | '/environments'
     | '/extensions'
+    | '/frontends'
     | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
     | '/playground'
+    | '/query'
     | '/setup'
     | '/uninstall'
     | '/data-sources/$providerId'
+    | '/data-sources/add'
+    | '/workspaces/$workspaceId'
+    | '/data-sources'
+    | '/workspaces'
   id:
     | '__root__'
     | '/'
@@ -208,15 +303,24 @@ export interface FileRouteTypes {
     | '/backends'
     | '/data-catalog'
     | '/data-sources'
+    | '/diagnostics'
+    | '/environment-extensions'
     | '/environments'
     | '/extensions'
+    | '/frontends'
     | '/home'
     | '/installation-progress'
     | '/jupyter-logs'
     | '/playground'
+    | '/query'
     | '/setup'
     | '/uninstall'
+    | '/workspaces'
     | '/data-sources/$providerId'
+    | '/data-sources/add'
+    | '/workspaces/$workspaceId'
+    | '/data-sources/'
+    | '/workspaces/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -227,18 +331,30 @@ export interface RootRouteChildren {
   BackendsRoute: typeof BackendsRoute
   DataCatalogRoute: typeof DataCatalogRoute
   DataSourcesRoute: typeof DataSourcesRouteWithChildren
+  DiagnosticsRoute: typeof DiagnosticsRoute
+  EnvironmentExtensionsRoute: typeof EnvironmentExtensionsRoute
   EnvironmentsRoute: typeof EnvironmentsRoute
   ExtensionsRoute: typeof ExtensionsRoute
+  FrontendsRoute: typeof FrontendsRoute
   HomeRoute: typeof HomeRoute
   InstallationProgressRoute: typeof InstallationProgressRoute
   JupyterLogsRoute: typeof JupyterLogsRoute
   PlaygroundRoute: typeof PlaygroundRoute
+  QueryRoute: typeof QueryRoute
   SetupRoute: typeof SetupRoute
   UninstallRoute: typeof UninstallRoute
+  WorkspacesRoute: typeof WorkspacesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workspaces': {
+      id: '/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof WorkspacesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/uninstall': {
       id: '/uninstall'
       path: '/uninstall'
@@ -251,6 +367,13 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/query': {
+      id: '/query'
+      path: '/query'
+      fullPath: '/query'
+      preLoaderRoute: typeof QueryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/playground': {
@@ -281,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/frontends': {
+      id: '/frontends'
+      path: '/frontends'
+      fullPath: '/frontends'
+      preLoaderRoute: typeof FrontendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/extensions': {
       id: '/extensions'
       path: '/extensions'
@@ -293,6 +423,20 @@ declare module '@tanstack/react-router' {
       path: '/environments'
       fullPath: '/environments'
       preLoaderRoute: typeof EnvironmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/environment-extensions': {
+      id: '/environment-extensions'
+      path: '/environment-extensions'
+      fullPath: '/environment-extensions'
+      preLoaderRoute: typeof EnvironmentExtensionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostics': {
+      id: '/diagnostics'
+      path: '/diagnostics'
+      fullPath: '/diagnostics'
+      preLoaderRoute: typeof DiagnosticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data-sources': {
@@ -344,6 +488,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workspaces/': {
+      id: '/workspaces/'
+      path: '/'
+      fullPath: '/workspaces/'
+      preLoaderRoute: typeof WorkspacesIndexRouteImport
+      parentRoute: typeof WorkspacesRoute
+    }
+    '/data-sources/': {
+      id: '/data-sources/'
+      path: '/'
+      fullPath: '/data-sources/'
+      preLoaderRoute: typeof DataSourcesIndexRouteImport
+      parentRoute: typeof DataSourcesRoute
+    }
+    '/workspaces/$workspaceId': {
+      id: '/workspaces/$workspaceId'
+      path: '/$workspaceId'
+      fullPath: '/workspaces/$workspaceId'
+      preLoaderRoute: typeof WorkspacesWorkspaceIdRouteImport
+      parentRoute: typeof WorkspacesRoute
+    }
+    '/data-sources/add': {
+      id: '/data-sources/add'
+      path: '/add'
+      fullPath: '/data-sources/add'
+      preLoaderRoute: typeof DataSourcesAddRouteImport
+      parentRoute: typeof DataSourcesRoute
+    }
     '/data-sources/$providerId': {
       id: '/data-sources/$providerId'
       path: '/$providerId'
@@ -356,14 +528,32 @@ declare module '@tanstack/react-router' {
 
 interface DataSourcesRouteChildren {
   DataSourcesProviderIdRoute: typeof DataSourcesProviderIdRoute
+  DataSourcesAddRoute: typeof DataSourcesAddRoute
+  DataSourcesIndexRoute: typeof DataSourcesIndexRoute
 }
 
 const DataSourcesRouteChildren: DataSourcesRouteChildren = {
   DataSourcesProviderIdRoute: DataSourcesProviderIdRoute,
+  DataSourcesAddRoute: DataSourcesAddRoute,
+  DataSourcesIndexRoute: DataSourcesIndexRoute,
 }
 
 const DataSourcesRouteWithChildren = DataSourcesRoute._addFileChildren(
   DataSourcesRouteChildren,
+)
+
+interface WorkspacesRouteChildren {
+  WorkspacesWorkspaceIdRoute: typeof WorkspacesWorkspaceIdRoute
+  WorkspacesIndexRoute: typeof WorkspacesIndexRoute
+}
+
+const WorkspacesRouteChildren: WorkspacesRouteChildren = {
+  WorkspacesWorkspaceIdRoute: WorkspacesWorkspaceIdRoute,
+  WorkspacesIndexRoute: WorkspacesIndexRoute,
+}
+
+const WorkspacesRouteWithChildren = WorkspacesRoute._addFileChildren(
+  WorkspacesRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -374,14 +564,19 @@ const rootRouteChildren: RootRouteChildren = {
   BackendsRoute: BackendsRoute,
   DataCatalogRoute: DataCatalogRoute,
   DataSourcesRoute: DataSourcesRouteWithChildren,
+  DiagnosticsRoute: DiagnosticsRoute,
+  EnvironmentExtensionsRoute: EnvironmentExtensionsRoute,
   EnvironmentsRoute: EnvironmentsRoute,
   ExtensionsRoute: ExtensionsRoute,
+  FrontendsRoute: FrontendsRoute,
   HomeRoute: HomeRoute,
   InstallationProgressRoute: InstallationProgressRoute,
   JupyterLogsRoute: JupyterLogsRoute,
   PlaygroundRoute: PlaygroundRoute,
+  QueryRoute: QueryRoute,
   SetupRoute: SetupRoute,
   UninstallRoute: UninstallRoute,
+  WorkspacesRoute: WorkspacesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

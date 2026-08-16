@@ -1,7 +1,7 @@
 # Change Design: Alice 控制台
 
-项目设计基础：[`../../../DESIGN.md`](../../../DESIGN.md)  
-选定方向：`directions.md#A-Alice-控制台--选定`  
+项目设计基础：[`../../../DESIGN.md`](../../../DESIGN.md)
+选定方向：`directions.md#A-Alice-控制台--选定`
 OpenSpec 兼容关系：[`openspec-compatibility.md`](openspec-compatibility.md)
 
 ## Requirements Map

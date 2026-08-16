@@ -1510,13 +1510,15 @@ dependencies:
   - setuptools
   - pip:
       - notebook
+      - jupyterlab
       - jupyterlab-lsp
       - "python-lsp-server[all]"
       - jupyterlab-latex
       - "anywidget[dev]"
       - ipywidgets
-      - openbb-platform-api
-      - openbb-mcp-server
+      - "openbb-core @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/core"
+      - "openbb[all] @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform"
+      - "openalice-ashare-provider @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/providers/ashare"
 "#
     );
 
@@ -1768,6 +1770,8 @@ mod tests {
 
     #[test]
     fn test_generate_environment_yaml_content() {
+        use std::sync::{Arc, Mutex};
+
         let mut mock_fs = MockFileSystem::new();
         let mut env_sys = MockEnvSystem::new();
         env_sys
@@ -1776,19 +1780,25 @@ mod tests {
             .returning(|_| Ok("/mock/home".to_string()));
         mock_fs.expect_exists().returning(|_| false);
         mock_fs.expect_create_dir_all().returning(|_| Ok(()));
-        mock_fs.expect_write().returning(|_, _| Ok(()));
-        mock_fs
-            .expect_read_to_string()
-            .returning(|_| Ok("python=3.10\n".to_string()));
-        mock_fs.expect_remove_file().returning(|_| Ok(()));
+        let written = Arc::new(Mutex::new(String::new()));
+        let captured = Arc::clone(&written);
+        mock_fs.expect_write().returning(move |_, content| {
+            *captured.lock().unwrap() = content.to_string();
+            Ok(())
+        });
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result =
             rt.block_on(async { generate_environment_yaml("3.10", &mock_fs, &env_sys).await });
         assert!(result.is_ok());
-        let yaml_path = result.unwrap();
-        let content = mock_fs.read_to_string(&yaml_path).unwrap();
+        let content = written.lock().unwrap();
         assert!(content.contains("python=3.10"));
-        let _ = mock_fs.remove_file(&yaml_path.to_string_lossy());
+        // Runtime toolchain components must be explicit pip entries, not transitive deps
+        assert!(content.contains("\n      - jupyterlab\n"));
+        assert!(content.contains("openbb-core @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/core"));
+        assert!(content.contains("openbb[all] @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform"));
+        assert!(content.contains("openalice-ashare-provider @ https://codeload.github.com/2233admin/openalice-data/zip/refs/heads/main#subdirectory=openbb_platform/providers/ashare"));
+        assert!(!content.contains("git+https://"));
+        assert!(content.contains("jupyterlab-lsp"));
     }
 
     #[test]

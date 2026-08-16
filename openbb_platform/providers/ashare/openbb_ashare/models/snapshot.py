@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from typing import Any
+from warnings import warn
 
 from openbb_core.provider.abstract.fetcher import Fetcher
 from openbb_core.provider.standard_models.equity_quote import (
@@ -40,7 +42,10 @@ def _infer_market(code: str) -> str:
 class AshareSnapshotQueryParams(EquityQuoteQueryParams):
     """Request one or more normalized A-share symbols from a named source."""
 
-    source: str = Field(default="auto", description="Provider adapter name.")
+    source: str = Field(
+        default="yfinance",
+        description="A-share source adapter. The built-in credential-free adapter is yfinance.",
+    )
 
     @field_validator("symbol", mode="before")
     @classmethod
@@ -82,7 +87,7 @@ class AshareSnapshotFetcher(
         """Call the injected source adapter without handling credentials."""
         adapter: SourceAdapter | None = kwargs.get("source_adapter")
         if adapter is None:
-            raise RuntimeError(f"source adapter is not configured: {query.source}")
+            adapter = _get_source_adapter(query.source)
         result = adapter(query.symbol.split(","))
         if hasattr(result, "__await__"):
             return await result  # type: ignore[misc]
@@ -123,3 +128,57 @@ class AshareSnapshotFetcher(
                 )
             )
         return rows
+
+
+def _get_source_adapter(source: str) -> SourceAdapter:
+    """Resolve a built-in adapter without coupling the provider to OpenBB Core."""
+    adapters: dict[str, SourceAdapter] = {
+        "auto": _yfinance_adapter,
+        "yfinance": _yfinance_adapter,
+    }
+    try:
+        return adapters[source.lower()]
+    except KeyError as exc:
+        available = ", ".join(sorted(adapters))
+        raise ValueError(
+            f"unsupported A-share source adapter: {source}. Available: {available}"
+        ) from exc
+
+
+def _to_yfinance_symbol(symbol: str) -> str:
+    """Translate canonical A-share symbols to Yahoo Finance market suffixes."""
+    code, market = normalize_symbol(symbol).split(".")
+    suffix = {"SH": "SS", "SZ": "SZ", "BJ": "BJ"}[market]
+    return f"{code}.{suffix}"
+
+
+async def _yfinance_adapter(symbols: list[str]) -> list[dict[str, Any]]:
+    """Fetch credential-free A-share quotes from Yahoo Finance."""
+    from yfinance import Ticker  # pylint: disable=import-outside-toplevel
+
+    async def get_one(symbol: str) -> dict[str, Any] | None:
+        canonical = normalize_symbol(symbol)
+        try:
+            info = await asyncio.to_thread(
+                Ticker(_to_yfinance_symbol(canonical)).get_info
+            )
+        except Exception as exc:  # noqa: BLE001 - isolate upstream symbol failures
+            warn(f"Error getting A-share data for {canonical}: {exc}", stacklevel=2)
+            return None
+        price = info.get("currentPrice") or info.get("regularMarketPrice")
+        if price is None:
+            return None
+        return {
+            "symbol": canonical,
+            "name": info.get("longName") or info.get("shortName"),
+            "price": price,
+            "prev_close": info.get("previousClose") or info.get("regularMarketPreviousClose"),
+            "open": info.get("open") or info.get("regularMarketOpen"),
+            "high": info.get("dayHigh") or info.get("regularMarketDayHigh"),
+            "low": info.get("dayLow") or info.get("regularMarketDayLow"),
+            "volume": info.get("volume") or info.get("regularMarketVolume"),
+            "vendor_time": info.get("regularMarketTime"),
+        }
+
+    rows = await asyncio.gather(*(get_one(symbol) for symbol in symbols))
+    return [row for row in rows if row is not None]

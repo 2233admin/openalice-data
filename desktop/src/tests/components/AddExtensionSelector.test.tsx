@@ -96,6 +96,26 @@ test('AddExtensionSelector fetches and displays extensions', async () => {
   expect(screen.getByText((content) => content.includes('obbject1'))).toBeInTheDocument();
 });
 
+test("can hide Provider packages from the generic extension flow", async () => {
+  mockFetch.mockImplementation((url: string) => {
+    if (url.includes("provider.json")) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(mockExtensionsData.providers) });
+    }
+    if (url.includes("router.json")) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(mockExtensionsData.routers) });
+    }
+    if (url.includes("obbject.json")) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(mockExtensionsData.obbjects) });
+    }
+    return Promise.reject(new Error("unknown url"));
+  });
+
+  render(<AddExtensionSelector excludeCategories={["provider"]} onInstallExtensions={vi.fn()} />);
+  await waitFor(() => expect(screen.queryByText(/Loading extensions.../i)).not.toBeInTheDocument());
+
+  expect(screen.queryByRole("tab", { name: /Data Providers/i })).not.toBeInTheDocument();
+});
+
 test('AddExtensionSelector handles search query', async () => {
   mockFetch.mockImplementation((url: string) => {
     if (url.includes('provider.json')) {

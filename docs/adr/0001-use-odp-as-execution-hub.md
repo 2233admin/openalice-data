@@ -1,0 +1,5 @@
+# Use ODP as the execution Hub and add workspaces as launch presets
+
+OpenAlice Data will preserve ODP as the authority for credentials, service lifecycle, capability registration and Provider execution, while adding a workspace as a flat, ordered “loadout” of native data sources. Home only selects one data source/workspace and one visualization frontend before invoking `Start`; data-source and frontend management remain separate first-level tasks. This avoids rebuilding ODP while allowing workspace-scoped batch use and runtime failover that ODP's credential-presence fallback does not provide.
+
+The product has one enhanced data-source management page rather than separate Data Sources and API Keys products. It reuses ODP credential behavior and the original compact interaction density, adds flat workspace classification, and leaves legacy URLs only for migration. Visualization frontends are managed independently; OpenBB Workspace is built in, additional frontends initially reuse ODP's existing addition mechanism, and connection guidance automates only the steps the target frontend supports.

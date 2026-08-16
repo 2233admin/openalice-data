@@ -1,0 +1,50 @@
+{
+  "tool": "session_start",
+  "session_id": "20260815-032158",
+  "path": "C:\\Users\\Administrator\\orca\\openalice-data\\desktop\\src\\routes",
+  "status": "Baseline saved",
+  "quality_signal": 8786,
+  "bottleneck": "god_files",
+  "started_at": "2026-08-15T03:21:58.8992814+08:00",
+  "gate": {
+    "pass": true,
+    "status": "passed",
+    "exit_code": 0,
+    "duration_ms": 529,
+    "metrics": {
+      "quality_before": 8786,
+      "quality_signal": 8786,
+      "coupling_before": 62.94,
+      "coupling": 62.94,
+      "cycles_before": 0.0,
+      "cycles": 0.0,
+      "god_files_before": 4.0,
+      "god_files": 4.0,
+      "distance_from_main_sequence": 0.6294,
+      "no_degradation": false,
+      "violations": null,
+      "scan": {
+        "resolvedImports": 107,
+        "unresolvedImports": 0,
+        "files": 17,
+        "importEdges": 107,
+        "callEdges": 2663,
+        "inheritEdges": 0
+      }
+    },
+    "baseline": {
+      "path": "C:\\Users\\Administrator\\orca\\openalice-data\\desktop\\src\\routes\\.sentrux\\cache\\lite-baseline.json",
+      "quality_signal": 8786,
+      "coupling": 62.94,
+      "cycles": 0.0,
+      "god_files": 4.0,
+      "complex_functions": 1.0,
+      "total_import_edges": 107.0,
+      "cross_module_edges": 107.0
+    },
+    "bottleneck": "god_files",
+    "raw_output": "[resolve] 107 resolved, 0 unresolved\r\n[build_graphs] 17 files | 107 import, 2663 call, 0 inherit edges\r\nQuality: 8786 -> 8786\r\nCoupling: 62.94 -> 62.94\r\nCycles: 0 -> 0\r\nGod files: 4 -> 4\r\nDistance from Main Sequence: 0.6294\r\nBaseline saved: C:\\Users\\Administrator\\orca\\openalice-data\\desktop\\src\\routes\\.sentrux\\cache\\lite-baseline.json",
+    "metrics_observed_count": 4,
+    "backfilled_metrics": []
+  }
+}

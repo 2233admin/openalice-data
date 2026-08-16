@@ -1,8 +1,23 @@
-# OpenAlice Data Hub 产品范围与数据契约
+# OpenAlice 产品范围与 Provider 契约
 
 状态：生效；决策者：仓库维护者；生效日期：2026-08-10；适用范围：本仓库、`openalice_data` 扩展、所有自有 Provider 与接入方。
 
-本文规定当前产品边界。架构取舍见 [OPENALICE_DATA_DECISION.md](OPENALICE_DATA_DECISION.md)，字段与第三方条款入口见 [PROVIDER_COMPLIANCE.md](PROVIDER_COMPLIANCE.md)。
+本文规定当前产品边界：OpenAlice 是完整 OpenBB Fork，主要增量为中国及亚洲市场
+Provider 和必要中文本地化。`openalice_data` Data Hub 是可选扩展，不是默认产品
+入口。字段与第三方条款入口见 [PROVIDER_COMPLIANCE.md](PROVIDER_COMPLIANCE.md)。
+
+## 主产品验收条款
+
+| 条款 | 强制等级 | 约束 | 校验点 |
+|---|---|---|---|
+| P1 | MUST | 默认安装提供 OpenBB 全部公开 Provider、扩展、REST 与 Python 能力，而非自建精简替代品。 | 根包 `openbb[all]` 安装；上游兼容测试 |
+| P2 | MUST | 中国及亚洲市场能力以 OpenBB Provider 和标准模型接入，不建立平行 API。 | Provider 注册表；REST coverage；widget 生成 |
+| P3 | MUST | 首个 A 股 Provider 注册为 `ashare`，行情快照实现标准 `EquityQuote` 模型。 | `openbb_ashare` 合同测试 |
+| P4 | SHOULD | 增量尽量留在自有 Provider、本地化和品牌层，降低 OpenBB Core 的同步冲突。 | Fork 差异审查 |
+| P5 | MUST | 每个数据源单独记录授权、来源、新鲜度、覆盖率与缺失语义。 | Provider 合同与合规清单 |
+
+以下 C 条款仅约束可选的 `openalice_data` Data Hub；它们不定义 OpenAlice
+默认入口，也不要求默认部署携带本地数据目录。
 
 ## 术语
 

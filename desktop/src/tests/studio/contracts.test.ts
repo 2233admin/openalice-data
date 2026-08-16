@@ -57,4 +57,27 @@ describe("studioSnapshotSchema", () => {
     invalid.providers[0].status = "probably_ok";
     expect(() => studioSnapshotSchema.parse(invalid)).toThrow();
   });
+  it("normalizes legacy snapshots with explicit freshness metadata", () => {
+    const parsed = studioSnapshotSchema.parse(validSnapshot);
+    expect(parsed.freshness).toMatchObject({
+      status: "fresh",
+      source: "live",
+      inspected_at: validSnapshot.fetched_at,
+    });
+  });
+  it("preserves undeclared response fields as unknown", () => {
+    const snapshot = structuredClone(validSnapshot) as typeof validSnapshot & {
+      datasets: Array<(typeof validSnapshot.datasets)[number] & { response_fields: null }>;
+    };
+    snapshot.datasets[0].response_fields = null;
+    expect(studioSnapshotSchema.parse(snapshot).datasets[0].response_fields).toBeNull();
+  });
+
+  it("rejects secret-bearing provider metadata", () => {
+    const unsafe = structuredClone(validSnapshot) as typeof validSnapshot & {
+      providers: Array<(typeof validSnapshot.providers)[number] & { token: string }>;
+    };
+    unsafe.providers[0].token = "must-not-cross-boundary";
+    expect(() => studioSnapshotSchema.parse(unsafe)).toThrow();
+  });
 });

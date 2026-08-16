@@ -43,4 +43,3 @@ Studio SHALL combine inspected OpenBB metadata with existing managed service, ru
 #### Scenario: No suitable runtime exists
 - **WHEN** neither a running OpenBB API runtime nor the managed openbb runtime exists
 - **THEN** Studio shows an actionable error linked to Advanced Runtimes
-

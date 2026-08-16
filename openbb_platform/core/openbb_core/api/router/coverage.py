@@ -1,14 +1,39 @@
 """Coverage API router."""
 
-import json
-from typing import Annotated
+from typing import Annotated, Any, Literal, get_args, get_origin
 
 from fastapi import APIRouter, Depends
 from openbb_core.api.dependency.coverage import get_command_map, get_provider_interface
 from openbb_core.app.provider_interface import ProviderInterface
 from openbb_core.app.router import CommandMap
+from openbb_core.app.service.user_service import UserService
 
 router = APIRouter(prefix="/coverage", tags=["Coverage"])
+
+
+def _literal_values(annotation: Any) -> list[Any]:
+    """Return JSON-safe Literal values nested in a type annotation."""
+    if get_origin(annotation) is Literal:
+        return list(get_args(annotation))
+    for argument in get_args(annotation):
+        values = _literal_values(argument)
+        if values:
+            return values
+    return []
+
+
+def _field_metadata(field_info: Any) -> dict[str, Any]:
+    """Serialize only stable, JSON-safe field metadata for Studio clients."""
+    annotation = getattr(field_info, "annotation", None)
+    metadata: dict[str, Any] = {
+        "annotation": str(annotation) if annotation is not None else "Any",
+        "description": getattr(field_info, "description", None),
+        "required": bool(field_info.is_required()),
+    }
+    choices = _literal_values(annotation)
+    if choices:
+        metadata["enum"] = choices
+    return metadata
 
 
 @router.get("/command_model", openapi_extra={"widget_config": {"exclude": True}})
@@ -39,25 +64,12 @@ async def get_commands_model_map(
             data_fields = data.get("fields", {})
 
             for field, field_info in query_fields.items():
-                attributes = (
-                    field_info._attributes_set  # pylint: disable=protected-access
-                )
-                if attributes.get("annotation"):
-                    _annotation = str(attributes.get("annotation"))
-                    attributes["annotation"] = _annotation
-
-                new_command[provider]["QueryParams"]["fields"][field] = attributes
+                new_command[provider]["QueryParams"]["fields"][field] = _field_metadata(field_info)
 
             new_command[provider]["QueryParams"]["docstring"] = query.get("docstring")
 
             for field, field_info in data_fields.items():
-                attributes = (
-                    field_info._attributes_set  # pylint: disable=protected-access
-                )
-                if attributes.get("annotation"):
-                    _annotation = str(attributes.get("annotation"))
-                    attributes["annotation"] = _annotation
-                new_command[provider]["Data"]["fields"][field] = attributes
+                new_command[provider]["Data"]["fields"][field] = _field_metadata(field_info)
 
             new_command[provider]["Data"]["docstring"] = data.get("docstring")
 
@@ -77,16 +89,44 @@ async def get_commands_model_map(
                     if obb_data := openbb_info.get("Data", {}).get("fields", {}):
                         old_fields = new_command[key]["Data"].get("fields", {})
                         new_command[key]["Data"]["fields"] = {**obb_data, **old_fields}
-        _ = new_command.pop("openbb")
+        common_fields = new_command.pop("openbb", None)
+        if common_fields is not None:
+            new_command["common"] = common_fields
         commands_map[command] = new_command
 
-    def serializer(obj):
-        """Serialize the object."""
-        if isinstance(obj, type):
-            return str(obj)
-        return obj
+    return commands_map
 
-    return json.loads(json.dumps(commands_map, default=serializer, indent=4))
+
+def _credential_is_configured(value: Any) -> bool:
+    """Return configured state without serializing credential contents."""
+    if value is None:
+        return False
+    get_secret_value = getattr(value, "get_secret_value", None)
+    if callable(get_secret_value):
+        return bool(get_secret_value())
+    return bool(value)
+
+
+@router.get("/provider_metadata", openapi_extra={"widget_config": {"exclude": True}})
+async def get_provider_metadata(
+    provider_interface: Annotated[ProviderInterface, Depends(get_provider_interface)],
+) -> dict[str, list[dict[str, Any]]]:
+    """Expose registry credential names and configured flags, never values."""
+    credentials = UserService.read_from_file().credentials
+    return {
+        provider: [
+            {
+                "name": credential_name,
+                "required": True,
+                "configured": _credential_is_configured(
+                    getattr(credentials, credential_name, None)
+                ),
+            }
+            for credential_name in credential_names
+        ]
+        for provider, credential_names in provider_interface.credentials.items()
+    }
+
 
 
 @router.get("/providers", openapi_extra={"widget_config": {"exclude": True}})

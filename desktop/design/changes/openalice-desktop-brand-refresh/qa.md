@@ -1,6 +1,6 @@
 # QA — Design Stage
 
-日期：2026-08-14  
+日期：2026-08-14
 状态：设计 artifacts 已生成；产品实现和实机验收尚未进行。
 
 ## Evidence

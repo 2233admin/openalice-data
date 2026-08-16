@@ -1,49 +1,53 @@
-import { Outlet, createRootRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Outlet, createRootRoute, useLocation, useRouter } from "@tanstack/react-router";
+import { useEffect, type ReactNode } from "react";
 import { AliceMark, OpenAliceBrand } from "../components/OpenAliceBrand";
 import ShowVersion from "../components/ShowVersion";
 import { EnvironmentCreationProvider, useEnvironmentCreation } from "../contexts/EnvironmentCreationContext";
 
 export const Route = createRootRoute({ component: RootWithProvider });
 
-interface NavLinkProps {
-	to: string;
-	children: React.ReactNode;
-	selectedTab: string;
-	setSelectedTab: (tab: string) => void;
+const openAliceNavigation = [
+	{ to: "/home", label: "首页" },
+	{ to: "/data-sources", label: "数据源" },
+	{ to: "/environment-extensions", label: "环境与扩展" },
+] as const;
+
+function activeIntent(pathname: string, _search: string) {
+	if (pathname === "/home") return "/home";
+	if (pathname === "/data-sources" || pathname.startsWith("/data-sources/") || pathname === "/data-catalog" || pathname === "/workspaces" || pathname.startsWith("/workspaces/")) return "/data-sources";
+	if (pathname === "/environment-extensions" || pathname === "/extensions" || pathname === "/frontends" || pathname === "/backends" || pathname === "/backend-logs" || pathname === "/environments" || pathname === "/api-keys" || pathname === "/diagnostics" || pathname === "/jupyter-logs") return "/environment-extensions";
+	return "";
 }
 
-function NavLink({ to, children, selectedTab, setSelectedTab }: NavLinkProps) {
+function NavLink({ to, children, active }: { to: string; children: ReactNode; active: boolean }) {
 	const { isCreatingEnvironment } = useEnvironmentCreation();
 	const router = useRouter();
-	const currentPath = router.state.location.pathname;
-	const active = selectedTab === to;
 
-	if (isCreatingEnvironment && currentPath !== to) {
-		return <div className="px-3 py-2 text-theme-muted opacity-50" role="tab" aria-selected={active}>{children}</div>;
+	if (isCreatingEnvironment && !active) {
+		return <span className="px-1 pb-2 text-sm text-theme-muted opacity-50" aria-disabled="true">{children}</span>;
 	}
 
 	return (
-		<button
-			type="button"
-			role="tab"
-			aria-selected={active}
-			className={`mr-3 pb-2 text-sm ${active ? "border-b-2 tab-border-active font-medium text-theme-accent" : "text-theme-muted"}`}
-			onClick={() => { setSelectedTab(to); router.navigate({ to }); }}
+		<a
+			href={to}
+			aria-current={active ? "page" : undefined}
+			className={`mr-3 border-b-2 px-1 pb-2 text-sm ${active ? "tab-border-active font-medium text-theme-accent" : "border-transparent text-theme-muted"}`}
+			onClick={(event) => {
+				event.preventDefault();
+				void router.navigate({ to });
+			}}
 		>
 			{children}
-		</button>
+		</a>
 	);
 }
 
 function Root() {
-	const router = useRouter();
-	const currentPath = router.state.location.pathname;
-	const [selectedTab, setSelectedTab] = useState(currentPath);
+	const { pathname: currentPath, searchStr = "" } = useLocation();
+	const selectedIntent = activeIntent(currentPath, searchStr);
 	const isLogsView = currentPath === "/jupyter-logs" || currentPath === "/backend-logs";
-	const shouldHideNav = isLogsView || currentPath === "/setup" || currentPath === "/installation-progress";
+	const shouldHideNav = currentPath === "/setup" || currentPath === "/installation-progress";
 
-	useEffect(() => setSelectedTab(currentPath), [currentPath]);
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement;
@@ -52,12 +56,6 @@ function Root() {
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, []);
-
-	const links = [
-		["/home", "首页"], ["/backends", "服务"], ["/environments", "运行环境"],
-		["/api-keys", "API 凭证"], ["/data-sources", "数据源"], ["/data-catalog", "数据目录"],
-		["/playground", "查询"], ["/extensions", "扩展"], ["/advanced", "高级设置"],
-	] as const;
 
 	return (
 		<div className="flex h-screen flex-col overflow-hidden bg-theme-primary text-theme-primary">
@@ -71,9 +69,14 @@ function Root() {
 				</div>
 			</header>
 			<div className="border-b-2 border-theme-outline px-5">
-				{!shouldHideNav && <nav className="flex flex-row gap-1 overflow-x-auto" role="tablist" aria-label="主导航">
-					{links.map(([to, label]) => <NavLink key={to} to={to} selectedTab={selectedTab} setSelectedTab={setSelectedTab}>{label}</NavLink>)}
-				</nav>}
+				{!shouldHideNav && (
+					<nav className="flex flex-row items-end gap-1 overflow-x-auto" aria-label="主导航">
+						{openAliceNavigation.map(({ to, label }) => (
+							<NavLink key={to} to={to} active={selectedIntent === to}>{label}</NavLink>
+						))}
+
+					</nav>
+				)}
 			</div>
 			<div className="flex min-h-0 flex-1 bg-theme-secondary">
 				<main className={`flex flex-1 flex-col ${isLogsView ? "pl-5" : "px-5"}`}><Outlet /></main>

@@ -8,6 +8,7 @@ ashare_provider = Provider(
     name="ashare",
     description="Normalized A-share quote snapshots with source provenance.",
     website="https://git.xart.top:8418/Curry/openbb-ashare",
-    fetcher_dict={"AshareSnapshot": AshareSnapshotFetcher},
+    fetcher_dict={"EquityQuote": AshareSnapshotFetcher},
+    repr_name="OpenAlice A-share",
 )
 

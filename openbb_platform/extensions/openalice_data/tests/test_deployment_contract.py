@@ -12,18 +12,18 @@ def test_compose_is_a_single_service_zero_setup_entry() -> None:
     assert "openalice-data:" in compose
     assert "build/docker/openalice-data.Dockerfile" in compose
     assert "${OPENALICE_PORT:-6900}:6900" in compose
-    assert "/api/v1/data/health" in compose
-    assert "./data:/data:ro" in compose
+    assert "/api/v1/coverage/providers" in compose
+    assert "OPENALICE_DATA_SOURCES" not in compose
 
 
-def test_beta_image_contains_a_real_openbb_provider() -> None:
-    """The public image should install one credential-free real provider."""
+def test_image_contains_complete_openbb_and_the_ashare_provider() -> None:
+    """The public image should preserve OpenBB and add the A-share provider."""
     dockerfile = (
         REPO_ROOT / "build" / "docker" / "openalice-data.Dockerfile"
     ).read_text(encoding="utf-8")
 
-    assert "/opt/openalice/openbb_platform/extensions/equity" in dockerfile
-    assert "/opt/openalice/openbb_platform/providers/yfinance" in dockerfile
+    assert '"/opt/openalice/openbb_platform[all]"' in dockerfile
+    assert "/opt/openalice/openbb_platform/providers/ashare" in dockerfile
     assert "USER openalice" in dockerfile
     assert 'CMD ["openbb-api", "--host", "0.0.0.0", "--port", "6900"]' in dockerfile
 
@@ -34,8 +34,8 @@ def test_first_run_configuration_is_documented_in_chinese() -> None:
     env_example = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
 
     assert "docker compose up --build -d" in readme
-    assert "http://localhost:6900/api/v1/data/" in readme
-    assert "接入自定义市场" in readme
+    assert "http://localhost:6900/docs" in readme
+    assert "中国及亚洲市场 Provider" in readme
     assert "OPENALICE_PORT=6900" in env_example
 
 
@@ -59,8 +59,8 @@ def test_runtime_verifier_rejects_fake_green_data() -> None:
         encoding="utf-8"
     )
 
-    assert "/api/v1/data/health" in verifier
-    assert "/api/v1/data/" in verifier
+    assert "/api/v1/coverage/providers" in verifier
+    assert '"ashare" in candidate' in verifier
     assert "/api/v1/equity/price/historical" in verifier
     assert "if not rows:" in verifier
     assert "return 1" in verifier
