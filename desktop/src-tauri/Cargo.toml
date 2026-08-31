@@ -62,7 +62,7 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 
 [target.'cfg(linux)'.dependencies]
-glib = "^0.21.5"
+glib = "^0.22.9"
 
 [features]
 # This feature depends on the Tauri CLI & CLI plugin for updater
