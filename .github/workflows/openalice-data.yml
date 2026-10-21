@@ -11,7 +11,7 @@ permissions:
 jobs:
   contracts:
     name: Python ${{ matrix.python-version }} contracts
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_5070X_ENABLED == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && 'ci-5070x-linux' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -31,7 +31,7 @@ jobs:
 
   container:
     name: Compose image
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_5070X_ENABLED == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && 'ci-5070x-docker' || 'ubuntu-latest' }}
     needs: contracts
     steps:
       - uses: actions/checkout@v4
