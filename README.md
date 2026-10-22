@@ -2,6 +2,11 @@
 
 **基于 OpenBB 的中文、多市场、易部署开源数据平台。**
 
+项目的产品定位和公开发行标准以[产品章程](docs/PRODUCT_CHARTER.zh-CN.md)为准；
+[发行治理](docs/RELEASE_GOVERNANCE.zh-CN.md)规定 PR、Nightly、Beta 和 Stable 门禁，
+[路线图](docs/ROADMAP.zh-CN.md)记录当前执行阶段。`openalice_data` 数据屏是平台扩展，
+不是整个 OpenAlice 产品。
+
 ## OpenAlice Desktop
 
 OpenAlice 的主软件形态是基于 OpenBB Desktop 的桌面应用，用于管理隔离的
