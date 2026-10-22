@@ -3,9 +3,55 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
 import pytest
-from openbb_ashare.models.snapshot import AshareSnapshotFetcher
+from openbb_ashare import ashare_provider
+from openbb_ashare.models.snapshot import (
+    AshareSnapshotFetcher,
+    _get_source_adapter,
+    _to_yfinance_symbol,
+    _yfinance_adapter,
+)
+
+
+def test_provider_registers_the_standard_equity_quote_model() -> None:
+    """The provider must attach to OpenBB's existing equity quote route."""
+    assert ashare_provider.fetcher_dict["EquityQuote"] is AshareSnapshotFetcher
+    assert "AshareSnapshot" not in ashare_provider.fetcher_dict
+
+
+def test_yfinance_symbol_translation_preserves_chinese_markets() -> None:
+    """Translate OpenBB exchange suffixes to Yahoo Finance suffixes."""
+    assert _to_yfinance_symbol("600000.SH") == "600000.SS"
+    assert _to_yfinance_symbol("sz000001") == "000001.SZ"
+
+
+def test_unknown_source_adapter_is_actionable() -> None:
+    """Reject unknown adapters with an actionable error."""
+    with pytest.raises(ValueError, match="unsupported A-share source adapter"):
+        _get_source_adapter("missing")
+
+
+@pytest.mark.asyncio
+async def test_yfinance_adapter_isolates_one_symbol_failure() -> None:
+    """Return healthy symbols even when one upstream request fails."""
+    successful = MagicMock()
+    successful.get_info.return_value = {
+        "currentPrice": 10.5,
+        "previousClose": 10.0,
+        "longName": "平安银行",
+    }
+    failed = MagicMock()
+    failed.get_info.side_effect = RuntimeError("upstream unavailable")
+
+    with patch(
+        "yfinance.Ticker",
+        side_effect=lambda symbol: failed if symbol == "600000.SS" else successful,
+    ), pytest.warns(UserWarning, match="600000.SH"):
+        rows = await _yfinance_adapter(["000001.SZ", "600000.SH"])
+
+    assert [row["symbol"] for row in rows] == ["000001.SZ"]
 
 
 @pytest.mark.asyncio

@@ -39,7 +39,18 @@ fn stage_openssl() -> Result<(), String> {
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?);
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let profile = env::var("PROFILE").unwrap_or_default();
     let skip_existing = env::var("OPENSSL_COPY_SKIP_EXISTING").ok().as_deref() == Some("1");
+
+    // Runtime DLL staging is a bundling concern. A development Tauri window
+    // links against the host OpenSSL installation and must not require vcpkg
+    // merely to start the app.
+    if target_os == "windows" && profile != "release" {
+        println!(
+            "cargo:warning=skipping OpenSSL runtime staging for {profile} profile; required only for bundling"
+        );
+        return Ok(());
+    }
 
     match target_os.as_str() {
         "macos" => stage_macos(&manifest_dir, skip_existing),

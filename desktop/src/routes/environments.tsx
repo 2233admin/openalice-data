@@ -1,5 +1,5 @@
 import { Button, Tooltip } from "@openbb/ui-pro";
-import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { exists, BaseDirectory } from '@tauri-apps/plugin-fs';
@@ -231,7 +231,17 @@ function ExtensionRow({
 }
 
 export default function EnvironmentsPage() {
-	const search = useSearch({ from: "/environments" });
+	const params = new URLSearchParams(window.location.search);
+	const search = {
+		directory: params.get("directory") ?? undefined,
+		userDataDir: params.get("userDataDir") ?? undefined,
+		section: params.get("section") === "jupyter" ? "jupyter" as const : undefined,
+	};
+	useEffect(() => {
+		if (search.section !== "jupyter") return;
+		const frame = requestAnimationFrame(() => document.getElementById("jupyter-controls")?.focus());
+		return () => cancelAnimationFrame(frame);
+	}, [search.section]);
 	const { setIsCreatingEnvironment } = useEnvironmentCreation();
 	const [creatingFromRequirements, setCreatingFromRequirements] =
 		useState(false);
@@ -2345,6 +2355,12 @@ end tell
 							/>
 						)}
 					</div>
+					{search.section === "jupyter" && (
+						<section className="m-2 rounded-lg border border-theme-accent p-3" id="jupyter-controls" tabIndex={-1}>
+							<h2 className="body-md-strong text-theme">Jupyter</h2>
+							<p className="body-xs-regular mt-1 text-theme-primary">Jupyter 生命周期、打开操作和日志继续由各 ODP Environment 行中的原有控件管理。</p>
+						</section>
+					)}
 
 					{creationWarning && (
 						<div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
@@ -3408,12 +3424,25 @@ end tell
 	);
 }
 
+function EnvironmentsMigration() {
+	const navigate = useNavigate();
+	const params = new URLSearchParams(window.location.search);
+	const directory = params.get("directory") ?? undefined;
+	const userDataDir = params.get("userDataDir") ?? undefined;
+	const section = params.get("section") === "jupyter" ? "jupyter" as const : undefined;
+	useEffect(() => {
+		void navigate({ to: "/environment-extensions", search: { tab: "environment", directory, userDataDir, section }, replace: true });
+	}, [directory, navigate, section, userDataDir]);
+	return <main className="mx-auto w-full max-w-4xl py-10"><p className="text-sm text-theme-muted">正在打开环境与扩展中的环境管理…</p><a className="mt-3 inline-block text-sm text-theme-accent" href="/environment-extensions?tab=environment">继续</a></main>;
+}
+
 export const Route = createFileRoute("/environments")({
-	component: EnvironmentsPage,
+	component: EnvironmentsMigration,
 	validateSearch: (search: Record<string, unknown>) => {
 		return {
 			directory: search.directory as string | undefined,
 			userDataDir: search.userDataDir as string | undefined,
+			section: search.section === "jupyter" ? "jupyter" as const : undefined,
 		};
 	},
 });

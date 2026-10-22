@@ -15,4 +15,3 @@ Compatibility rules:
 - This change owns brand hierarchy, Chinese-first information architecture, screen-space UI, motion, accessibility and visual QA.
 - No requirement in this change may hide, simulate or delete an OpenSpec-defined real connection path.
 - Before implementation, either create the matching repository OpenSpec follow-up `openalice-desktop-brand-refresh`, or link this artifact folder from an approved successor change. Do not add branding tasks to the completed P0 scope without an explicit proposal update.
-

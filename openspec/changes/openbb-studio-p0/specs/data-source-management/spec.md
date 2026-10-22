@@ -46,4 +46,3 @@ Health SHALL report Package installed, Provider discovered, Credentials valid, O
 #### Scenario: Only discovery is confirmed
 - **WHEN** package and provider discovery are confirmed but no credential or query verification has run
 - **THEN** only confirmed checks pass and all remaining checks stay pending or failed
-

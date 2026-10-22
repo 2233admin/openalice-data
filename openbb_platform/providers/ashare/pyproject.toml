@@ -1,13 +1,13 @@
 [project]
 name = "openalice-ashare-provider"
 version = "0.1.0"
-description = "Internal A-share snapshot provider for OpenAlice Data"
-requires-python = ">=3.11,<3.14"
+description = "A-share market provider for the OpenBB Platform"
+requires-python = ">=3.10,<4"
 license = {text = "AGPL-3.0-only"}
-dependencies = ["openbb-core>=1.6.13,<2"]
+dependencies = ["openbb-core>=1.6.13,<2", "yfinance>=1.4.0,<2"]
 
 [project.entry-points."openbb_provider_extension"]
-openalice_ashare = "openbb_ashare:ashare_provider"
+ashare = "openbb_ashare:ashare_provider"
 
 [build-system]
 requires = ["hatchling"]

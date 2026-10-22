@@ -1,0 +1,25 @@
+DEBUG REPORT
+
+Symptom
+Data Sources -> 添加数据源 navigated to /extensions, where the generic extension selector was shown. This conflated Provider installation with extension management.
+
+Root cause
+The DataSourcesPage header hard-coded href="/extensions". ExtensionsPage also presented discovered Provider cards and its generic AddExtensionSelector exposed Provider packages, so the normal extension surface was acting as the data-source catalog.
+
+Fix
+- Added /data-sources/add and AddDataSourcePage.
+- Added AddDataSourceSelector with a Provider-only catalog, search, credential hint, install action, and explicit restart/discovery handoff.
+- Data Sources now links to /data-sources/add.
+- Extensions now manages non-Provider extensions and hides Provider packages from its generic selector.
+- Corrected the extension install invocation to use the exported Tauri command arguments.
+- Added regression coverage for the route, separate surfaces, Provider-only installation, and restart handoff.
+
+Evidence
+- Browser: /data-sources link resolves to /data-sources/add.
+- Browser: Provider catalog loads Alpha Vantage and shows the five-step install/restart/discovery flow.
+- Browser: /extensions shows 添加扩展 and no Provider cards.
+- Tests: 29 files passed, 192 tests passed, 1 skipped.
+- Lint and production build passed.
+
+Status
+DONE_WITH_CONCERNS: browser preview cannot invoke Tauri commands, so the real package install was not executed in the browser. Native Rust tests remain subject to the existing OpenSSL environment limitation.

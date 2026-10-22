@@ -230,7 +230,10 @@ describe('InstallationProgressPage', () => {
       fireEvent.click(screen.getByText('Done'));
     });
 
-    await waitFor(() => expect(window.location.href).toBe('/environments?directory=%2Fmock%2Finstall%2Fdir&userDataDir=%2Fmock%2Fuser%2Fdata%2Fdir'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/environments',
+      search: { directory: '/mock/install/dir', userDataDir: '/mock/user/data/dir' },
+    }));
   });
 
   test('completes installation when extensions are skipped', async () => {
@@ -263,7 +266,10 @@ describe('InstallationProgressPage', () => {
       fireEvent.click(screen.getByText('Done'));
     });
 
-    await waitFor(() => expect(window.location.href).toBe('/environments?directory=%2Fmock%2Finstall%2Fdir&userDataDir=%2Fmock%2Fuser%2Fdata%2Fdir'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/environments',
+      search: { directory: '/mock/install/dir', userDataDir: '/mock/user/data/dir' },
+    }));
   });
 
   test('displays error message on installation failure', async () => {
@@ -403,7 +409,10 @@ describe('InstallationProgressPage', () => {
     act(() => {
       fireEvent.click(screen.getByText('Continue Anyway'));
     });
-    await waitFor(() => expect(window.location.href).toBe('/environments?directory=%2Fmock%2Finstall%2Fdir&userDataDir=%2Fmock%2Fuser%2Fdata%2Fdir'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/environments',
+      search: { directory: '/mock/install/dir', userDataDir: '/mock/user/data/dir' },
+    }));
   });
 
   test('handles "Try Again" on error', async () => {
@@ -431,6 +440,6 @@ describe('InstallationProgressPage', () => {
     act(() => {
       fireEvent.click(screen.getByText('Try Again'));
     });
-    expect(window.location.href).toBe('/setup');
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/setup' });
   });
 });

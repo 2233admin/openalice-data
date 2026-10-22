@@ -1,27 +1,78 @@
 import { Button, Tooltip } from "@openbb/ui-pro";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { message } from "@tauri-apps/plugin-dialog";
 import { useEffect, useMemo, useRef, useState } from "react";
 import CustomIcon, { CopyIcon, DocumentationIcon, FileIcon } from "../components/Icon";
 
-interface ApiKey {
+export interface ApiKey {
 	key: string;
 	value: string;
 	required: boolean;
 }
 
-type UserCredentialsResult = {
-  credentials?: Record<string, string | null | undefined>;
+export type BuiltInSource = {
+	id: string;
+	displayName: string;
 };
 
-export default function ApiKeysPage() {
+export type CredentialSourceGroup = {
+	id: string;
+	displayName: string;
+	credentialKeys: string[];
+};
+
+type UserCredentialsResult = {
+	credentials?: Record<string, string | null | undefined>;
+};
+export type ApiKeysPageProps = {
+	embedded?: boolean;
+	categoryKeyIds?: string[] | null;
+	builtInSources?: BuiltInSource[];
+	credentialSources?: CredentialSourceGroup[];
+	sourceStatuses?: Record<string, string>;
+	selectable?: boolean;
+	selectedKeyNames?: Set<string>;
+	onSelectedKeyNamesChange?: (keys: Set<string>) => void;
+	onKeysChange?: (keys: ApiKey[]) => void;
+};
+
+function sourceStatusLabel(status: string | undefined, configured: boolean): string {
+	switch (status) {
+		case "available":
+			return "可用";
+		case "partial":
+			return "部分可用";
+		case "failed":
+			return "检查失败";
+		case "unavailable":
+			return "不可用";
+		case "stale":
+			return "缓存";
+		default:
+			return configured ? "已配置" : "未配置";
+	}
+}
+
+export function ApiKeysPage({
+	embedded: _embedded = false,
+	categoryKeyIds = null,
+	builtInSources = [],
+	credentialSources = [],
+	sourceStatuses = {},
+	selectable = false,
+	selectedKeyNames = new Set<string>(),
+	onSelectedKeyNamesChange,
+	onKeysChange,
+}: ApiKeysPageProps = {}) {
 	// State management
 	const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isAddKeyModalOpen, setIsAddKeyModalOpen] = useState(false);
 	const [editingKeyIndex, setEditingKeyIndex] = useState<number | null>(null);
+	const [editingSourceGroup, setEditingSourceGroup] = useState<CredentialSourceGroup | null>(null);
+	const [sourceGroupValues, setSourceGroupValues] = useState<Record<string, string>>({});
 	const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
 	const [searchQuery, setSearchQuery] = useState("");
 	const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -158,7 +209,6 @@ export default function ApiKeysPage() {
 				setError("Failed to copy to clipboard");
 			});
 	};
-
 	const copyModalValueToClipboard = () => {
 		if (!newKey.value) return;
 		navigator.clipboard
@@ -168,10 +218,11 @@ export default function ApiKeysPage() {
 				setTimeout(() => setModalCopied(false), 2000);
 			})
 			.catch((err) => {
-				console.error("Failed to copy text: ", err);
-				setError("Failed to copy to clipboard");
+				console.error("Failed to copy modal value: ", err);
+				setError("复制到剪贴板失败");
 			});
 	};
+
 
 	const loadData = async () => {
 		try {
@@ -182,7 +233,7 @@ export default function ApiKeysPage() {
 			const userSettings = await invoke<UserCredentialsResult>("get_user_credentials");
 
 			// Format existing keys
-			const credentials = userSettings.credentials || {};
+			const credentials = userSettings?.credentials || {};
 			const formattedKeys: ApiKey[] = Object.entries(credentials).map(
 				([key, value]) => ({
 					key,
@@ -192,6 +243,7 @@ export default function ApiKeysPage() {
 			);
 
 			setApiKeys(formattedKeys);
+			onKeysChange?.(formattedKeys);
 		} catch (err) {
 			console.error("Failed to load API keys:", err);
 			setError(`Failed to load API keys: ${err}`);
@@ -205,51 +257,128 @@ export default function ApiKeysPage() {
 		loadData();
 	}, []);
 
-	// Filter API keys based on search query
-	const filteredApiKeys = useMemo(() => {
-		if (!searchQuery.trim()) return apiKeys;
-
+	// Filter grouped credential sources, ungrouped credentials, and built-ins.
+	const groupedCredentialKeys = useMemo(
+		() => new Set(credentialSources.flatMap((source) => source.credentialKeys)),
+		[credentialSources],
+	);
+	const filteredCredentialSources = useMemo(() => {
+		const categorySources = categoryKeyIds === null
+			? credentialSources
+			: credentialSources.filter((source) => categoryKeyIds.includes(source.id));
+		if (!searchQuery.trim()) return categorySources;
 		const query = searchQuery.toLowerCase();
-		return apiKeys.filter((key) => key.key.toLowerCase().includes(query));
-	}, [apiKeys, searchQuery]);
+		return categorySources.filter((source) =>
+			`${source.id} ${source.displayName} ${source.credentialKeys.join(" ")}`
+				.toLowerCase()
+				.includes(query),
+		);
+	}, [categoryKeyIds, credentialSources, searchQuery]);
+	const filteredApiKeys = useMemo(() => {
+		const ungroupedKeys = credentialSources.length > 0
+			? apiKeys.filter((key) => !groupedCredentialKeys.has(key.key))
+			: apiKeys;
+		const categoryKeys = categoryKeyIds === null
+			? ungroupedKeys
+			: ungroupedKeys.filter((key) => categoryKeyIds.includes(key.key));
+		if (!searchQuery.trim()) return categoryKeys;
+		const query = searchQuery.toLowerCase();
+		return categoryKeys.filter((key) => key.key.toLowerCase().includes(query));
+	}, [apiKeys, categoryKeyIds, credentialSources.length, groupedCredentialKeys, searchQuery]);
+	const filteredBuiltInSources = useMemo(() => {
+		const categorySources = categoryKeyIds === null
+			? builtInSources
+			: builtInSources.filter((source) => categoryKeyIds.includes(source.id));
+		if (!searchQuery.trim()) return categorySources;
+		const query = searchQuery.toLowerCase();
+		return categorySources.filter((source) =>
+			`${source.id} ${source.displayName}`.toLowerCase().includes(query),
+		);
+	}, [builtInSources, categoryKeyIds, searchQuery]);
+	const filteredSourceIds = useMemo(
+		() => [
+			...filteredCredentialSources.map((source) => source.id),
+			...filteredApiKeys.map((key) => key.key),
+			...filteredBuiltInSources.map((source) => source.id),
+		],
+		[filteredApiKeys, filteredBuiltInSources, filteredCredentialSources],
+	);
+	const handleEditSourceGroup = (source: CredentialSourceGroup) => {
+		const values = Object.fromEntries(
+			source.credentialKeys.map((key) => [key, apiKeys.find((item) => item.key === key)?.value ?? ""]),
+		);
+		setEditingSourceGroup(source);
+		setSourceGroupValues(values);
+		setEditingKeyIndex(null);
+		setModalMode("edit");
+		setIsAddKeyModalOpen(true);
+	};
+	const handleToggleSourceKey = (key: string) => {
+		const next = new Set(selectedKeyNames);
+		if (next.has(key)) next.delete(key);
+		else next.add(key);
+		onSelectedKeyNamesChange?.(next);
+	};
+
+	const handleToggleAllSourceKeys = () => {
+		const next = new Set(selectedKeyNames);
+		const allSelected = filteredSourceIds.length > 0 && filteredSourceIds.every((id) => next.has(id));
+		filteredSourceIds.forEach((id) => {
+			if (allSelected) next.delete(id);
+			else next.add(id);
+		});
+		onSelectedKeyNamesChange?.(next);
+	};
 
 
 	const handleSaveKey = async () => {
+		if (editingSourceGroup) {
+			const updatedKeys = [...apiKeys];
+			for (const key of editingSourceGroup.credentialKeys) {
+				const value = sourceGroupValues[key] ?? "";
+				const index = updatedKeys.findIndex((item) => item.key === key);
+				if (index >= 0) updatedKeys[index] = { ...updatedKeys[index], value };
+				else updatedKeys.unshift({ key, value, required: false });
+			}
+			setEditingSourceGroup(null);
+			setSourceGroupValues({});
+			setIsAddKeyModalOpen(false);
+			setModalMode("add");
+			await saveApiKeys(updatedKeys);
+			return;
+		}
 		if (!newKey.key.trim()) {
-			setError("API Key Name is required.");
+			setError("API 密钥名称不能为空。");
 			return;
 		}
 
 		let updatedKeys: ApiKey[];
-		if (modalMode === 'edit' && editingKeyIndex !== null) {
-			// Edit existing key
+		if (modalMode === "edit" && editingKeyIndex !== null) {
 			updatedKeys = [...apiKeys];
 			updatedKeys[editingKeyIndex] = { ...newKey, required: false };
 		} else {
-			// Add new key - check for duplicates only when adding
-			if (apiKeys.some((k) => k.key.toLowerCase() === newKey.key.toLowerCase())) {
-				setError("An API key with this name already exists.");
+			if (apiKeys.some((key) => key.key.toLowerCase() === newKey.key.toLowerCase())) {
+				setError("已存在同名 API 密钥。");
 				return;
 			}
 			updatedKeys = [{ ...newKey, required: false }, ...apiKeys];
 		}
 
-		// Close modal and reset
 		setNewKey({ key: "", value: "" });
 		setIsAddKeyModalOpen(false);
 		setEditingKeyIndex(null);
-		setModalMode('add');
-
-		// Auto-save the changes
+		setModalMode("add");
 		await saveApiKeys(updatedKeys);
 	};
 
 	// Add function to handle editing
 	const handleEditKey = (index: number) => {
 		const keyToEdit = apiKeys[index];
+		setEditingSourceGroup(null);
+		setSourceGroupValues({});
 		setNewKey({ key: keyToEdit.key, value: keyToEdit.value });
 		setEditingKeyIndex(index);
-		setModalMode('edit');
+		setModalMode("edit");
 		setIsAddKeyModalOpen(true);
 	};
 
@@ -360,10 +489,11 @@ export default function ApiKeysPage() {
 				{} as Record<string, string>,
 			);
 
-			// Save the credentials to user_settings.json
 			await invoke("update_user_credentials", { credentials });
 
 			setApiKeys(keysToSave);
+			onKeysChange?.(keysToSave);
+			window.dispatchEvent(new Event("studio-credentials-updated"));
 		} catch (err) {
 			console.error("Failed to save API keys:", err);
 			setError(`Failed to save API keys: ${err}`);
@@ -427,7 +557,7 @@ export default function ApiKeysPage() {
 			// Open documentation URL in a new window
 			await invoke("open_url_in_window", {
 				url: "https://docs.openbb.co/desktop/api_keys",
-				title: "Open Data Platform Documentation",
+				title: "API 密钥文档",
 			});
 		} catch (err) {
 			console.error("Failed to open documentation:", err);
@@ -532,215 +662,182 @@ export default function ApiKeysPage() {
 
 
 	return (
-		<div className="flex flex-col h-full">
-			<div className="mt-2 flex flex-col flex-1">
-				{/* API Keys Content Section */}
-				<section>
-					{loading ? (
-						null
-					) : error ? (
-						null
-					) : (
-						<div>
-							<div>
-								<div className="flex items-center justify-between py-4 mb-2">
-									{/* Search box */}
-									<div className="w-[200px] shrink-0">
-										<div className="relative">
-											<input
-												type="text"
-												placeholder="Search API Keys..."
-												value={searchQuery}
-												spellCheck={false}
-												onChange={(e) => setSearchQuery(e.target.value)}
-												className="border border-theme body-xs-regular !pl-6 shadow-sm w-full"
-											/>
-											{searchQuery ? (
-												<Tooltip
-													content="Clear search query"
-													className="tooltip tooltip-theme"
-												>
-													<button
-														type="button"
-														onClick={() => setSearchQuery("")}
-														className="absolute left-1 top-1/2 -translate-y-1/2 text-theme-muted"
-													>
-														<CustomIcon id="close" className="h-4 w-4" />
-													</button>
-												</Tooltip>
-											) : (
-												<span className="absolute left-1 top-1/2 -translate-y-1/2 text-theme-muted">
-													<CustomIcon id="search" className="h-4 w-4 ml-0.5" />
-												</span>
-											)}
-										</div>
-									</div>
-
-									{/* Action buttons including Save */}
-									<div className="flex items-center gap-2">
-										<Tooltip
-											content="Add a new API key."
-											className="tooltip tooltip-theme"
-										>
-											<Button
-												onClick={() => {
-													setModalMode('add');
-													setNewKey({ key: "", value: "" });
-													setEditingKeyIndex(null);
-													setIsAddKeyModalOpen(true);
-												}}
-												variant="neutral"
-												size="sm"
-												className="button-neutral shadow-sm px-2 py-1"
+		<div className="flex flex-col">
+			<section>
+				{loading ? null : error ? null : (
+					<div>
+						<div className="flex items-center justify-between py-2 mb-1">
+							<div className="w-[200px] shrink-0">
+								<div className="relative">
+									<input
+										type="text"
+										placeholder="搜索密钥..."
+										aria-label="搜索密钥"
+										value={searchQuery}
+										spellCheck={false}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										className="border border-theme body-xs-regular !pl-6 shadow-sm w-full"
+									/>
+									{searchQuery ? (
+										<Tooltip content="清除搜索" className="tooltip tooltip-theme">
+											<button
+												type="button"
+												aria-label="清除搜索"
+												onClick={() => setSearchQuery("")}
+												className="absolute left-1 top-1/2 -translate-y-1/2 text-theme-muted"
 											>
-												Add New Key
-											</Button>
+												<CustomIcon id="close" className="h-4 w-4" />
+											</button>
 										</Tooltip>
-										<Tooltip
-											content="Import API keys from a .env or JSON file. Saved only after clicking 'Save API Keys'."
-											className="tooltip tooltip-theme"
-										>
-											<Button
-												onClick={() => fileInputRef.current?.click()}
-												variant="secondary"
-												className="button-secondary shadow-sm px-2 py-1"
-												size="sm"
-											>
-												<span className="body-xs-medium whitespace-nowrap">Import Keys</span>
-											</Button>
-										</Tooltip>
-										<input
-											type="file"
-											ref={fileInputRef}
-											onChange={handleFileInputChange}
-											accept=".json,.env"
-											className="hidden"
-										/>
-										<Tooltip
-											content="View OpenBB Platform configuration and environment files."
-											className="tooltip tooltip-theme"
-										>
-											<Button
-												data-testid="settings-button"
-												onClick={() => setIsSettingsModalOpen(true)}
-												variant="outline"
-												size="icon"
-												className="button-secondary shadow-sm py-2 px-2"
-											>
-												<FileIcon className="h-4 w-4" />
-											</Button>
-										</Tooltip>
-
-										<Tooltip
-											content="Open the documentation for this screen."
-											className="tooltip-theme"
-										>
-											<Button
-												onClick={openDocumentation}
-												variant="outline"
-												className="button-secondary shadow-sm px-2 py-2"
-												size="sm"
-												data-testid="documentation-button"
-											>
-												<DocumentationIcon className="h-4 w-4" />
-											</Button>
-										</Tooltip>
-									</div>
+									) : (
+										<span className="absolute left-1 top-1/2 -translate-y-1/2 text-theme-muted">
+											<CustomIcon id="search" className="h-4 w-4 ml-0.5" />
+										</span>
+									)}
 								</div>
 							</div>
+							<div className="flex items-center gap-2">
+								<Tooltip content="添加新的 API 密钥" className="tooltip tooltip-theme">
+									<Button
+										onClick={() => {
+											setModalMode("add");
+											setNewKey({ key: "", value: "" });
+											setEditingKeyIndex(null);
+											setEditingSourceGroup(null);
+											setSourceGroupValues({});
+											setIsAddKeyModalOpen(true);
+										}}
+										variant="neutral"
+										size="sm"
+										className="button-neutral shadow-sm px-2 py-1"
+									>
+										添加密钥
+									</Button>
+								</Tooltip>
+								<Tooltip content="从 .env 或 JSON 文件导入凭证，确认后立即保存" className="tooltip tooltip-theme">
+									<Button
+										onClick={() => fileInputRef.current?.click()}
+										variant="secondary"
+										className="button-secondary shadow-sm px-2 py-1"
+										size="sm"
+									>
+										导入凭证
+									</Button>
+								</Tooltip>
+								<input
+									type="file"
+									ref={fileInputRef}
+									onChange={handleFileInputChange}
+									accept=".json,.env"
+									className="hidden"
+								/>
+								<Tooltip content="查看 OpenBB 配置文件" className="tooltip tooltip-theme">
+									<Button
+										data-testid="settings-button"
+										aria-label="查看配置文件"
+										onClick={() => setIsSettingsModalOpen(true)}
+										variant="outline"
+										size="icon"
+										className="button-secondary shadow-sm py-2 px-2"
+									>
+										<FileIcon className="h-4 w-4" />
+									</Button>
+								</Tooltip>
+								<Tooltip content="打开本页文档" className="tooltip-theme">
+									<Button
+										onClick={openDocumentation}
+										aria-label="打开 API 密钥文档"
+										variant="outline"
+										className="button-secondary shadow-sm px-2 py-2"
+										size="sm"
+										data-testid="documentation-button"
+									>
+										<DocumentationIcon className="h-4 w-4" />
+									</Button>
+								</Tooltip>
+							</div>
+						</div>
 							<div className="flex flex-col justify-between">
 								{/* Table Header */}
-								{filteredApiKeys.length > 0 && (
+								{filteredSourceIds.length > 0 && (
 									<div
 										ref={headerRef}
-										className="pl-2 flex items-center py-1 mb-3 rounded-sm body-xs-bold text-theme-muted bg-theme-quartary"
+										className="pl-2 flex items-center py-1 mb-2 rounded-sm body-xs-bold text-theme-muted bg-theme-quartary"
 									>
-										<div className="w-2/5 pr-2">Name</div>
-										<div className="w-2/5 pr-2">Value</div>
+										{selectable && <div className="w-10 shrink-0"><input type="checkbox" aria-label="选择全部数据源" checked={filteredSourceIds.length > 0 && filteredSourceIds.every((id) => selectedKeyNames.has(id))} onChange={handleToggleAllSourceKeys} /></div>}
+										<div className="w-2/5 pr-2">数据源</div>
+										<div className="w-2/5 pr-2">凭证 / 状态</div>
 										<div className="flex flex-1 items-center justify-end gap-2 pl-2 mr-2" />
 									</div>
 								)}
-								<div
-									className="overflow-y-auto max-h-[calc(100vh-16rem)]"
-									ref={scrollContainerRef}
-								>
-									{/* API Keys List */}
-									{filteredApiKeys.length > 0 ? (
-										<div className="flex-1 space-y-3" ref={contentRef}>
-											{filteredApiKeys.map((apiKey) => {
-												const originalIndex = apiKeys.findIndex(
-													(k) => k.key === apiKey.key,
-												);
+								<div className="overflow-y-auto max-h-[calc(100vh-16rem)]" ref={scrollContainerRef}>
+									{filteredSourceIds.length > 0 ? (
+										<div className="flex-1 space-y-2" ref={contentRef}>
+											{filteredCredentialSources.map((source) => {
+												const configuredCount = source.credentialKeys.filter((key) =>
+													apiKeys.some((item) => item.key === key && item.value.trim()),
+												).length;
 												return (
-													<div
-														key={`row-${originalIndex}`}
-														className="flex items-start rounded-lg bg-theme-tertiary py-2 shadow-md pl-2 group"
-													>
-														{/* Key Name */}
-														<div className="w-2/5 body-xs-medium truncate pr-2">{apiKey.key}</div>
-														{/* Key Value (masked) */}
-														<div className={`
-															w-2/5 body-xs-medium whitespace-pre-wrap pr-2
-															${!apiKey.value.trim() ? 'text-theme-muted' : ''}
-														`}>
-															{apiKey.value
-																? visibleKeys.has(apiKey.key)
-																	? apiKey.value
-																	: "********************"
-																: "Undefined"}
+													<div key={`source-${source.id}`} className="flex items-start rounded-lg bg-theme-tertiary py-1.5 shadow-md pl-2 group">
+														{selectable && <div className="w-10 shrink-0"><input type="checkbox" aria-label={`选择 ${source.displayName}`} checked={selectedKeyNames.has(source.id)} onChange={() => handleToggleSourceKey(source.id)} /></div>}
+														<div className="w-2/5 body-xs-medium truncate pr-2">{source.displayName}</div>
+														<div className="w-2/5 body-xs-medium text-theme-muted pr-2">
+															<div>{configuredCount}/{source.credentialKeys.length} 项凭证</div>
+															<span className="body-2xs-regular">{sourceStatusLabel(sourceStatuses[source.id], configuredCount > 0)}</span>
 														</div>
-														{/* Action Buttons */}
-															<div className="flex flex-1 items-center justify-end gap-2 pl-2 mr-2 opacity-0 group group-hover:opacity-100">
-																<Tooltip content="Edit API key" className="tooltip tooltip-theme">
-																	<Button
-																		onClick={() => handleEditKey(originalIndex)}
-																		variant="ghost"
-																		size="icon"
-																		className="button-ghost"
-																	>
-																		<CustomIcon id="edit" className="h-4 w-4" />
-																	</Button>
-																</Tooltip>
-																<Tooltip content={visibleKeys.has(apiKey.key) ? "Hide API key" : "Show API key"} className="tooltip tooltip-theme">
-																	<Button
-																		variant="ghost"
-																		onClick={() => toggleKeyVisibility(apiKey.key)}
-																		disabled={!apiKey.value.trim()}
-																		className="button-ghost"
-																		size="icon"
-																	>
-																		<CustomIcon
-																			id={visibleKeys.has(apiKey.key) ? "eye-off" : "eye"}
-																			className="h-4 w-4"
-																		/>
-																	</Button>
-																</Tooltip>
-																<Tooltip content={apiKey.value.trim() ? "Copy to clipboard" : "No value to copy"} className="tooltip tooltip-theme">
-																	<Button
-																		variant="ghost"
-																		onClick={() => copyToClipboard(apiKey.value, apiKey.key)}
-																		disabled={!apiKey.value.trim()}
-																		className="button-ghost"
-																		size="icon"
-																	>
-																		{copiedKey === apiKey.key ? (
-																			<CustomIcon
-																				id="success"
-																				className="h-4 w-4 text-green-500"
-																			/>
-																		) : (
-																			<CopyIcon className="h-4 w-4" />
-																		)}
-																	</Button>
-																</Tooltip>
-															</div>
+														<div className="flex flex-1 items-center justify-end gap-2 pl-2 mr-2 opacity-0 group group-hover:opacity-100">
+															<Tooltip content="编辑凭证" className="tooltip tooltip-theme">
+																<Button onClick={() => handleEditSourceGroup(source)} variant="ghost" size="icon" className="button-ghost">
+																	<CustomIcon id="edit" className="h-4 w-4" />
+																</Button>
+															</Tooltip>
+														</div>
 													</div>
 												);
 											})}
+											{filteredApiKeys.map((apiKey) => {
+												const originalIndex = apiKeys.findIndex((key) => key.key === apiKey.key);
+												return (
+													<div key={`row-${originalIndex}`} className="flex items-start rounded-lg bg-theme-tertiary py-1.5 shadow-md pl-2 group">
+														{selectable && <div className="w-10 shrink-0"><input type="checkbox" aria-label={`选择 ${apiKey.key}`} checked={selectedKeyNames.has(apiKey.key)} onChange={() => handleToggleSourceKey(apiKey.key)} /></div>}
+														<div className="w-2/5 body-xs-medium truncate pr-2">{apiKey.key}</div>
+														<div className={`w-2/5 body-xs-medium whitespace-pre-wrap pr-2 ${!apiKey.value.trim() ? "text-theme-muted" : ""}`}>
+															<div>{apiKey.value ? (visibleKeys.has(apiKey.key) ? apiKey.value : "********************") : "未设置"}</div>
+															<span className="body-2xs-regular text-theme-muted">{sourceStatusLabel(sourceStatuses[apiKey.key], Boolean(apiKey.value.trim()))}</span>
+														</div>
+														<div className="flex flex-1 items-center justify-end gap-2 pl-2 mr-2 opacity-0 group group-hover:opacity-100">
+															<Tooltip content="编辑 API 密钥" className="tooltip tooltip-theme">
+																<Button onClick={() => handleEditKey(originalIndex)} variant="ghost" size="icon" className="button-ghost">
+																	<CustomIcon id="edit" className="h-4 w-4" />
+																</Button>
+															</Tooltip>
+															<Tooltip content={visibleKeys.has(apiKey.key) ? "隐藏 API 密钥" : "显示 API 密钥"} className="tooltip tooltip-theme">
+																<Button variant="ghost" onClick={() => toggleKeyVisibility(apiKey.key)} disabled={!apiKey.value.trim()} className="button-ghost" size="icon">
+																	<CustomIcon id={visibleKeys.has(apiKey.key) ? "eye-off" : "eye"} className="h-4 w-4" />
+																</Button>
+															</Tooltip>
+															<Tooltip content={apiKey.value.trim() ? "复制到剪贴板" : "没有可复制的值"} className="tooltip tooltip-theme">
+																<Button variant="ghost" onClick={() => copyToClipboard(apiKey.value, apiKey.key)} disabled={!apiKey.value.trim()} className="button-ghost" size="icon">
+																	{copiedKey === apiKey.key ? <CustomIcon id="success" className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
+																</Button>
+															</Tooltip>
+														</div>
+													</div>
+												);
+											})}
+											{filteredBuiltInSources.map((source) => (
+												<div key={`built-in-${source.id}`} className="flex items-start rounded-lg bg-theme-tertiary py-1.5 shadow-md pl-2">
+													{selectable && <div className="w-10 shrink-0"><input type="checkbox" aria-label={`选择 ${source.displayName}`} checked={selectedKeyNames.has(source.id)} onChange={() => handleToggleSourceKey(source.id)} /></div>}
+													<div className="w-2/5 body-xs-medium truncate pr-2">{source.displayName}</div>
+													<div className="w-2/5 body-xs-medium text-theme-muted pr-2">
+														<span>内置数据源</span>
+														<span className="ml-2 body-2xs-regular">{sourceStatusLabel(sourceStatuses[source.id], true)}</span>
+													</div>
+													<div className="flex flex-1 items-center justify-end gap-2 pl-2 mr-2" />
+												</div>
+											))}
 										</div>
-									) : (
-										null
-									)}
+									) : null}
 								</div>
 							</div>
 						</div>
@@ -754,17 +851,16 @@ export default function ApiKeysPage() {
 								{/* Modal Header */}
 								<div className="flex items-center justify-between mb-5">
 									<h2 className="body-lg-bold font-bold text-theme-primary">
-										{modalMode === 'edit' ? 'Edit API Key' : 'Add API Key'}
+										{editingSourceGroup ? `编辑 ${editingSourceGroup.displayName}` : modalMode === "edit" ? "编辑 API 密钥" : "添加 API 密钥"}
 									</h2>
-									<Tooltip
-										content="Cancel and close"
-										className="tooltip tooltip-theme"
-									>
+									<Tooltip content="取消并关闭" className="tooltip tooltip-theme">
 										<button
 											type="button"
 											onClick={() => {
 												setIsAddKeyModalOpen(false);
-												setNewKey({ key: "", value: "" }); // Reset form on cancel
+												setEditingSourceGroup(null);
+												setSourceGroupValues({});
+												setNewKey({ key: "", value: "" });
 											}}
 											className="button button-ghost"
 										>
@@ -774,105 +870,93 @@ export default function ApiKeysPage() {
 								</div>
 
 								{/* Form Content */}
-								<div className="flex flex-col space-y-4">
-									<div className="flex flex-col gap-1">
-										<label htmlFor="modal-key-name" className="body-sm-medium text-theme-secondary">
-											Name
-										</label>
-										<input
-											id="modal-key-name"
-											type="text"
-											placeholder="api_key_name"
-											value={newKey.key}
-											spellCheck={false}
-											onChange={(e) =>
-												setNewKey({ ...newKey, key: e.target.value })
-											}
-											className="border border-theme-accent shadow-sm w-full h-10"
-										/>
-									</div>
-									<div className="flex flex-col gap-1">
-										<div className="flex justify-between items-center">
-											<label htmlFor="modal-key-value" className="body-sm-medium text-theme-secondary">
-												Value
+								{editingSourceGroup ? (
+									<div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
+										{editingSourceGroup.credentialKeys.map((key) => (
+											<label key={key} className="flex flex-col gap-1">
+												<span className="body-sm-medium text-theme-secondary">{key}</span>
+												<input
+													type="password"
+													placeholder="输入凭证值"
+													value={sourceGroupValues[key] ?? ""}
+													onChange={(event) => setSourceGroupValues((values) => ({ ...values, [key]: event.target.value }))}
+													className="text-input border border-theme-accent p-1 h-10"
+												/>
 											</label>
-											<div className="flex items-center relative top-9 right-1">
-												<Tooltip content={isModalValueVisible ? "Hide value" : "Show value"} className="tooltip tooltip-theme">
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														onClick={() => setIsModalValueVisible(!isModalValueVisible)}
-														className="button-ghost flex items-center p-1"
-													>
-														<CustomIcon
-															id={isModalValueVisible ? "eye-off" : "eye"}
-															className="h-4 w-4"
-														/>
-													</Button>
-												</Tooltip>
-												<Tooltip content={newKey.value.trim() ? "Copy to clipboard" : "No value to copy"} className="tooltip tooltip-theme">
-													<Button
-														type="button"
-														onClick={copyModalValueToClipboard}
-														disabled={!newKey.value.trim()}
-														size="icon"
-														variant="ghost"
-														className={`button-ghost flex items-center mr-1 ${!newKey.value.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-													>
-														{modalCopied ? (
-															<CustomIcon
-																id="success"
-																className="h-4 w-4 text-green-500"
-															/>
-														) : (
-															<CopyIcon className="h-4 w-4" />
-														)}
-													</Button>
-												</Tooltip>
-											</div>
-										</div>
-										{isModalValueVisible ? (
-											<textarea
-												id="modal-key-value"
-												placeholder="Enter your API key"
-												value={newKey.value}
-												spellCheck={false}
-												onChange={(e) =>
-													setNewKey({ ...newKey, value: e.target.value })
-												}
-												className="body-xs-regular leading-relaxed border border-theme-accent shadow-sm w-full rounded-md resize p-1 max-h-[calc(50vh-4rem)] max-w-[85vw] min-w-[21rem] !pr-12"
-												style={{ caretShape: 'block', height: '2.5rem', minHeight: '2.5rem', lineHeight: '1.05rem' }}
-											/>
-										) : (
-											<div className="border border-theme-accent shadow-sm w-full rounded-md">
-											<input
-												id="modal-key-value"
-												type="password"
-												placeholder="Enter your API key"
-												value={newKey.value}
-												spellCheck={false}
-												onChange={(e) =>
-													setNewKey({ ...newKey, value: e.target.value })
-												}
-												className="text-input *:body-xs-regular border-none p-1 h-10 min-w-[21rem] !pr-12"
-											/>
-											</div>
-										)}
+										))}
 									</div>
-								</div>
+								) : (
+									<div className="flex flex-col space-y-4">
+										<div className="flex flex-col gap-1">
+											<label htmlFor="modal-key-name" className="body-sm-medium text-theme-secondary">
+												名称
+											</label>
+											<input
+												id="modal-key-name"
+												type="text"
+												placeholder="api_key_name"
+												value={newKey.key}
+												spellCheck={false}
+												onChange={(event) => setNewKey({ ...newKey, key: event.target.value })}
+												className="border border-theme-accent shadow-sm w-full h-10"
+											/>
+										</div>
+										<div className="flex flex-col gap-1">
+											<div className="flex justify-between items-center">
+												<label htmlFor="modal-key-value" className="body-sm-medium text-theme-secondary">
+													值
+												</label>
+												<div className="flex items-center relative top-9 right-1">
+													<Tooltip content={isModalValueVisible ? "隐藏值" : "显示值"} className="tooltip tooltip-theme">
+														<Button type="button" variant="ghost" size="icon" onClick={() => setIsModalValueVisible(!isModalValueVisible)} className="button-ghost flex items-center p-1">
+															<CustomIcon id={isModalValueVisible ? "eye-off" : "eye"} className="h-4 w-4" />
+														</Button>
+													</Tooltip>
+													<Tooltip content={newKey.value.trim() ? "复制到剪贴板" : "没有可复制的值"} className="tooltip tooltip-theme">
+														<Button type="button" onClick={copyModalValueToClipboard} disabled={!newKey.value.trim()} size="icon" variant="ghost" className={`button-ghost flex items-center mr-1 ${!newKey.value.trim() ? "opacity-50 cursor-not-allowed" : ""}`}>
+															{modalCopied ? <CustomIcon id="success" className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
+														</Button>
+													</Tooltip>
+												</div>
+											</div>
+											{isModalValueVisible ? (
+												<textarea
+													id="modal-key-value"
+													placeholder="输入 API 密钥"
+													value={newKey.value}
+													spellCheck={false}
+													onChange={(event) => setNewKey({ ...newKey, value: event.target.value })}
+													className="body-xs-regular leading-relaxed border border-theme-accent shadow-sm w-full rounded-md resize p-1 max-h-[calc(50vh-4rem)] max-w-[85vw] min-w-[21rem] !pr-12"
+													style={{ caretShape: "block", height: "2.5rem", minHeight: "2.5rem", lineHeight: "1.05rem" }}
+												/>
+											) : (
+												<div className="border border-theme-accent shadow-sm w-full rounded-md">
+													<input
+														id="modal-key-value"
+														type="password"
+														placeholder="输入 API 密钥"
+														value={newKey.value}
+														spellCheck={false}
+														onChange={(event) => setNewKey({ ...newKey, value: event.target.value })}
+														className="text-input *:body-xs-regular border-none p-1 h-10 min-w-[21rem] !pr-12"
+													/>
+												</div>
+											)}
+										</div>
+									</div>
+								)}
 
 								{/* Action Buttons */}
 								<div className="flex justify-between items-center mt-5">
 									<div>
-										{modalMode === 'edit' && (
+										{modalMode === "edit" && !editingSourceGroup && (
 											<Button
 												onClick={handleDeleteKeyFromModal}
 												variant="danger"
 												size="sm"
 												className="button-danger px-2 py-1"
 											>
-												Delete
+												删除
 											</Button>
 										)}
 									</div>
@@ -880,22 +964,24 @@ export default function ApiKeysPage() {
 										<Button
 											onClick={() => {
 												setIsAddKeyModalOpen(false);
+												setEditingSourceGroup(null);
+												setSourceGroupValues({});
 												setNewKey({ key: "", value: "" });
 											}}
 											variant="outline"
 											size="sm"
 											className="button-outline px-2 py-1"
 										>
-											Cancel
+											取消
 										</Button>
 										<Button
 											onClick={handleSaveKey}
 											variant="primary"
 											size="sm"
 											className="button-primary px-2 py-1"
-											disabled={!newKey.key.trim()}
+											disabled={editingSourceGroup ? false : !newKey.key.trim()}
 										>
-											{modalMode === 'edit' ? 'Save' : 'Add'}
+											{modalMode === "edit" ? "保存" : "添加"}
 										</Button>
 									</div>
 								</div>
@@ -908,17 +994,17 @@ export default function ApiKeysPage() {
 				{filteredApiKeys.length === 0 && !loading && (
 					<>
 						{searchQuery ? (
-							<div className="flex flex-col items-center justify-center mt-2">
+							<div className="flex flex-col items-center justify-center mt-2 py-4">
 								<div className="text-center">
 									<CustomIcon
 										id="search"
 										className="h-12 w-12 text-theme-muted mb-2 mx-auto"
 									/>
 									<h3 className="body-md-bold text-theme-secondary mb-2">
-										No API keys found
+										没有找到匹配的 API 密钥
 									</h3>
 									<p className="body-sm-regular text-theme-muted mb-4">
-										No API keys match your search for "{searchQuery}"
+										没有匹配“{searchQuery}”的 API 密钥
 									</p>
 									<Button
 										onClick={() => setSearchQuery("")}
@@ -926,18 +1012,17 @@ export default function ApiKeysPage() {
 										size="sm"
 										className="button-outline"
 									>
-										<span className="body-xs-medium">Clear Search</span>
+										<span className="body-xs-medium">清除搜索</span>
 									</Button>
 								</div>
 							</div>
 						) : (
-							<div className="flex-1 w-full justify-center bg-theme-primary mb-4 rounded-sm flex flex-col items-center">
-								<p className="text-theme-muted body-sm-regular">No API keys added</p>
+							<div className="w-full justify-center bg-theme-primary mb-2 rounded-sm flex flex-col items-center py-6">
+								<p className="text-theme-muted body-sm-regular">还没有配置 API 密钥</p>
 							</div>
 						)}
 					</>
 				)}
-			</div>
 
 			{/* Settings Modal */}
 			{isSettingsModalOpen && (
@@ -945,10 +1030,10 @@ export default function ApiKeysPage() {
 					<div className="bg-theme-secondary border border-theme-modal rounded-lg shadow-md w-full max-w-xs px-5 pb-5 pt-3">
 						<div className="flex items-center justify-between mb-6">
 							<h2 className="body-lg-bold font-bold text-theme-primary">
-								Configuration Files
+								配置文件
 							</h2>
 							<Tooltip
-								content="Cancel and go back."
+								content="取消并返回"
 								className="tooltip tooltip-theme"
 							>
 								<button
@@ -1029,7 +1114,7 @@ export default function ApiKeysPage() {
 								className="button-primary shadow-sm px-2 py-1"
 								size="sm"
 							>
-								Open File
+								打开文件
 							</Button>
 						</div>
 					</div>
@@ -1042,10 +1127,10 @@ export default function ApiKeysPage() {
 					<div className="bg-theme-secondary border border-theme-modal rounded-lg shadow-md w-full max-w-[90vw] px-5 pb-5 pt-3">
 						<div className="flex items-center justify-between mb-4">
 							<h2 className="body-lg-bold font-bold text-theme-primary">
-								Confirm Import
+								确认导入
 							</h2>
 							<Tooltip
-								content="Cancel and close"
+								content="取消并关闭"
 								className="tooltip tooltip-theme"
 							>
 								<button
@@ -1070,8 +1155,8 @@ export default function ApiKeysPage() {
 												className="checkbox checkbox-theme h-4 w-4"
 											/>
 										</th>
-										<th className="p-2 body-sm-regular text-theme-secondary">Key</th>
-										<th className="p-2 body-sm-regular text-theme-secondary">Value</th>
+										<th className="p-2 body-sm-regular text-theme-secondary">密钥</th>
+										<th className="p-2 body-sm-regular text-theme-secondary">值</th>
 										<th className="p-2 w-10"></th>
 									</tr>
 								</thead>
@@ -1091,7 +1176,7 @@ export default function ApiKeysPage() {
 												{importVisibleKeys.has(key.key) ? key.value : "********************"}
 											</td>
 											<td className="p-2">
-												<Tooltip content={importVisibleKeys.has(key.key) ? "Hide" : "Show"} className="tooltip tooltip-theme">
+												<Tooltip content={importVisibleKeys.has(key.key) ? "隐藏" : "显示"} className="tooltip tooltip-theme">
 													<Button
 														variant="ghost"
 														size="icon"
@@ -1118,7 +1203,7 @@ export default function ApiKeysPage() {
 								size="sm"
 								className="button-outline px-2 py-1"
 							>
-								Cancel
+								取消
 							</Button>
 							<Button
 								onClick={handleConfirmImport}
@@ -1126,7 +1211,7 @@ export default function ApiKeysPage() {
 								size="sm"
 								className="button-primary px-2 py-1"
 							>
-								Import Selected ({selectedKeys.size})
+								导入所选 ({selectedKeys.size})
 							</Button>
 						</div>
 					</div>
@@ -1135,6 +1220,15 @@ export default function ApiKeysPage() {
 		</div>
 	);
 }
+
+function ApiKeysMigration() {
+	const navigate = useNavigate();
+	useEffect(() => { void navigate({ to: "/data-sources", replace: true }); }, [navigate]);
+	return <p className="p-6 text-sm text-theme-muted">正在打开数据源管理…</p>;
+}
+
 export const Route = createFileRoute("/api-keys")({
-	component: ApiKeysPage,
+	component: ApiKeysMigration,
 });
+
+export default ApiKeysPage;

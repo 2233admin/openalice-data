@@ -78,11 +78,11 @@ class StudioInspectorTest(unittest.TestCase):
             {
                 "id": "credential:fmp",
                 "severity": "warning",
-                "title": "Fmp needs credentials",
-                "description": "Add the required credentials, then run a test query.",
+                "title": "Fmp 需要配置凭证",
+                "description": "填写所需凭证，然后运行一次测试查询。",
                 "entity_type": "credential",
                 "entity_id": "fmp",
-                "action_label": "Add credential",
+                "action_label": "配置凭证",
                 "action_route": "/data-sources/fmp?tab=credentials",
             }
         ])

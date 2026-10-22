@@ -9,6 +9,167 @@ use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader};
 use std::process::Stdio;
 use tauri::Emitter;
+fn normalized_distribution_name(name: &str) -> String {
+    name.chars()
+        .map(|character| {
+            if character == '_' || character == '.' {
+                '-'
+            } else {
+                character.to_ascii_lowercase()
+            }
+        })
+        .collect()
+}
+
+fn discover_extension_metadata<E: EnvSystem>(
+    package_names: &[String],
+    python_path: &std::path::Path,
+    conda_dir: &std::path::Path,
+    env_sys: &E,
+) -> std::collections::HashMap<String, serde_json::Value> {
+    if package_names.is_empty() {
+        return std::collections::HashMap::new();
+    }
+
+    // Extension authors opt in through explicit OpenAlice metadata or one of
+    // the documented entry-point groups. Package names alone never imply a
+    // capability.
+    let script = r#"
+import json
+import sys
+from importlib import metadata as importlib_metadata
+
+packages = json.loads(sys.argv[1])
+groups = {
+    "openalice.frontend": "frontend",
+    "openalice.frontends": "frontend",
+    "openalice.notebook": "notebook",
+    "openalice.notebooks": "notebook",
+}
+
+def normalized(value):
+    return value.lower().replace("_", "-").replace(".", "-")
+
+def valid_descriptor(value):
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("id"), str)
+        and bool(value["id"].strip())
+        and isinstance(value.get("name"), str)
+        and bool(value["name"].strip())
+        and isinstance(value.get("url"), str)
+        and value["url"].startswith(("http://", "https://"))
+        and not any(character.isspace() for character in value["url"])
+    )
+
+def parse_descriptor(value):
+    if isinstance(value, dict):
+        return value if valid_descriptor(value) else None
+    if isinstance(value, str):
+        try:
+            candidate = json.loads(value)
+        except (TypeError, ValueError):
+            return None
+        return candidate if valid_descriptor(candidate) else None
+    return None
+
+result = {}
+for requested_name in packages:
+    try:
+        distribution = importlib_metadata.distribution(requested_name)
+    except importlib_metadata.PackageNotFoundError:
+        continue
+
+    distribution_name = distribution.metadata.get("Name", requested_name)
+    record = {}
+    role = (
+        distribution.metadata.get("OpenAlice-Role")
+        or distribution.metadata.get("OpenAlice-Extension-Role")
+    )
+    if role in ("frontend", "notebook"):
+        record["role"] = role
+        display_name = distribution.metadata.get("OpenAlice-Display-Name")
+        if display_name and display_name.strip():
+            record["display_name"] = display_name.strip()
+        descriptor = parse_descriptor(distribution.metadata.get("OpenAlice-Frontend"))
+        if descriptor is None:
+            fields = {
+                "id": distribution.metadata.get("OpenAlice-Frontend-Id"),
+                "name": distribution.metadata.get("OpenAlice-Frontend-Name"),
+                "url": distribution.metadata.get("OpenAlice-Frontend-Url"),
+            }
+            descriptor = fields if valid_descriptor(fields) else None
+        if descriptor is not None:
+            record["frontend"] = descriptor
+
+    try:
+        entry_points = importlib_metadata.entry_points()
+        if hasattr(entry_points, "select"):
+            candidates = [
+                entry_point
+                for group, entry_role in groups.items()
+                for entry_point in entry_points.select(group=group)
+            ]
+        else:
+            candidates = [
+                entry_point
+                for entry_point in entry_points
+                if getattr(entry_point, "group", None) in groups
+            ]
+    except Exception:
+        candidates = []
+
+    for entry_point in candidates:
+        owner = getattr(entry_point, "dist", None)
+        owner_name = getattr(owner, "metadata", {}).get("Name") if owner else None
+        if normalized(owner_name or "") != normalized(distribution_name):
+            continue
+        entry_role = groups.get(getattr(entry_point, "group", ""))
+        if entry_role is None:
+            continue
+        record["role"] = entry_role
+        if not record.get("display_name") and getattr(entry_point, "name", "").strip():
+            record["display_name"] = entry_point.name.strip()
+        descriptor = parse_descriptor(getattr(entry_point, "value", ""))
+        if descriptor is None:
+            value = getattr(entry_point, "value", "")
+            if isinstance(value, str) and value.startswith(("http://", "https://")):
+                descriptor = {
+                    "id": entry_point.name,
+                    "name": entry_point.name,
+                    "url": value,
+                }
+        if entry_role == "frontend" and descriptor is not None:
+            record["frontend"] = descriptor
+
+    if record.get("role") in ("frontend", "notebook"):
+        result[normalized(distribution_name)] = record
+
+print(json.dumps(result, separators=(",", ":")))
+"#;
+
+    let package_json = match serde_json::to_string(package_names) {
+        Ok(value) => value,
+        Err(_) => return std::collections::HashMap::new(),
+    };
+    let mut python_command = env_sys.new_conda_command(python_path, conda_dir);
+    let output = match python_command.args(["-c", script, &package_json]).output() {
+        Ok(output) if output.status.success() => output,
+        Ok(output) => {
+            log::debug!(
+                "Python extension metadata discovery failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return std::collections::HashMap::new();
+        }
+        Err(error) => {
+            log::debug!("Python extension metadata discovery unavailable: {error}");
+            return std::collections::HashMap::new();
+        }
+    };
+    serde_json::from_slice(&output.stdout).unwrap_or_default()
+}
+
 
 // Helper function to remove ANSI escape sequences and handle carriage returns
 fn clean_output_line(input: &str) -> String {
@@ -1957,9 +2118,30 @@ export PATH="{}:{}:$PATH"
     }
 
     // Parse the JSON output from conda list
-    let stdout = String::from_utf8_lossy(&output.stdout);
     let packages: Vec<serde_json::Value> = serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse conda list output: {e}"))?;
+
+    // Python distribution metadata is optional. If the environment cannot
+    // provide it, the package inventory below remains unchanged.
+    let env_python_path = if env_sys.consts_os() == "windows" {
+        if name == "base" {
+            conda_dir.join("python.exe")
+        } else {
+            conda_dir.join("envs").join(&name).join("python.exe")
+        }
+    } else if name == "base" {
+        conda_dir.join("bin").join("python")
+    } else {
+        conda_dir.join("envs").join(&name).join("bin").join("python")
+    };
+    let package_names = packages
+        .iter()
+        .filter_map(|package| package["name"].as_str())
+        .filter(|package_name| !matches!(*package_name, "python" | "pip" | "setuptools"))
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    let metadata_by_package =
+        discover_extension_metadata(&package_names, &env_python_path, &conda_dir, env_sys);
 
     // Convert the packages to the expected extension format
     let mut extensions = Vec::new();
@@ -1981,13 +2163,33 @@ export PATH="{}:{}:$PATH"
             ("conda", format!("{}:{}", channel, name))
         };
 
-        // Create the extension object
-        let extension = serde_json::json!({
+        // Create the extension object and merge only explicit capabilities
+        // discovered from the package's distribution metadata.
+        let mut extension = serde_json::json!({
             "package": package_name,
             "version": version,
             "install_method": install_method,
             "channel": channel
         });
+        if let Some(metadata) = metadata_by_package.get(&normalized_distribution_name(name))
+            && let Some(role) = metadata["role"].as_str()
+            && matches!(role, "frontend" | "notebook")
+        {
+            extension["role"] = serde_json::json!(role);
+            if let Some(display_name) = metadata["display_name"].as_str()
+                && !display_name.trim().is_empty()
+            {
+                extension["display_name"] = serde_json::json!(display_name);
+            }
+            if role == "frontend"
+                && let Some(frontend) = metadata["frontend"].as_object()
+                && ["id", "name", "url"]
+                    .iter()
+                    .all(|field| frontend.get(*field).and_then(|value| value.as_str()).is_some())
+            {
+                extension["frontend"] = serde_json::Value::Object(frontend.clone());
+            }
+        }
 
         extensions.push(extension);
     }

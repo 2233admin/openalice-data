@@ -1,0 +1,58 @@
+{
+  "schema": "design-pipeline.design-synthesis.v1",
+  "changeId": "studio-ux-architecture",
+  "status": "partially-implemented",
+  "stage": "release-readiness",
+  "updatedAt": "2026-08-16T06:07:19Z",
+  "artifactRoot": "design/changes/studio-ux-architecture",
+  "projectRoot": "../../..",
+  "problem": "为 OpenAlice Data 设计围绕原始 ODP 控制面的中国化、人性化数据源入口、可选组合数据源、一级扩展入口和 ODP 原生功能分组；不新增查询、Workspace、Advanced、映射或第二套数据核心。",
+  "inputs": {
+    "mode": "requirements-only",
+    "framework": "react",
+    "references": [],
+    "templates": []
+  },
+  "interaction": {
+    "mode": "operate",
+    "nextCommand": "Implement GitHub ticket #11 without expanding #9/#10 scope.",
+    "message": "The source-first baseline is accepted. Tickets #9 and #10 are implemented and bounded-verified; #11–#13 remain pending."
+  },
+  "scope": {
+    "budget": "program",
+    "threshold": 60,
+    "status": "fit",
+    "score": 52,
+    "surprise": false,
+    "counts": {
+      "surfaces": 4,
+      "workflows": 5,
+      "integrations": 2,
+      "unknowns": 3,
+      "decisions": 12
+    }
+  },
+  "wayfinder": {
+    "required": false,
+    "status": "not-required",
+    "mapUrl": null
+  },
+  "output": {
+    "path": "DESIGN.md",
+    "status": "validated",
+    "sha256": "5ea2506ab172a1cef5ffa8048e7780631b32770c67510b139caaeda43763ba14",
+    "validatedAt": "2026-08-16T06:07:19Z"
+  },
+  "evidence": [
+    {
+      "type": "grill",
+      "path": "design/changes/studio-ux-architecture/decisions/grill.md",
+      "recordedAt": "2026-08-15T23:43:47Z"
+    },
+    {
+      "type": "design-validation",
+      "path": "DESIGN.md",
+      "recordedAt": "2026-08-14T19:01:52.860Z"
+    }
+  ]
+}

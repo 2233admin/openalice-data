@@ -1,4 +1,6 @@
 ## Why
+Status: SUPERSEDED by `desktop/design/changes/studio-ux-architecture/requirements.md` and `openspec/changes/openbb-studio-user-workflows/proposal.md`. Retained as historical P0 context; Action Center/blocker-first Home requirements are not active.
+
 
 The existing ODP Desktop exposes services, Python runtimes, and global credentials before the data-source workflow users actually need. OpenBB Studio P0 must add a human-facing connect, configure, test, and query layer while keeping OpenBB Platform and the existing Desktop runtime controls as the only platform core.
 

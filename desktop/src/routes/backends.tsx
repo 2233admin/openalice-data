@@ -1,5 +1,5 @@
 import { Button, Tooltip } from "@openbb/ui-pro";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { openPath, openUrl } from "@tauri-apps/plugin-opener";
 import { listen } from "@tauri-apps/api/event";
@@ -2735,7 +2735,15 @@ export default function BackendsPage() {
 		</div>
 	);
 }
+function BackendsMigration() {
+	const navigate = useNavigate();
+	useEffect(() => {
+		void navigate({ to: "/environment-extensions", search: { tab: "services", directory: undefined, userDataDir: undefined, section: undefined }, replace: true });
+	}, [navigate]);
+	return <main className="mx-auto w-full max-w-4xl py-10"><p className="text-sm text-theme-muted">正在打开环境与扩展中的服务管理…</p><a className="mt-3 inline-block text-sm text-theme-accent" href="/environment-extensions?tab=services">继续</a></main>;
+}
+
 
 export const Route = createFileRoute("/backends")({
-	component: BackendsPage,
+	component: BackendsMigration,
 });

@@ -1,0 +1,93 @@
+{
+  "components": [
+    {
+      "capabilities": [],
+      "file": "src/components/AddDataSourceSelector.tsx",
+      "framework": "react",
+      "id": "AddDataSourceSelector",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/AddExtensionSelector.tsx",
+      "framework": "react",
+      "id": "AddExtensionSelector",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/BackendLogsPage.tsx",
+      "framework": "react",
+      "id": "BackendLogsPage",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/EnvironmentActions.tsx",
+      "framework": "react",
+      "id": "EnvironmentActions",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/GamestonkIcon.tsx",
+      "framework": "react",
+      "id": "GamestonkIcon",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/Icon.tsx",
+      "framework": "react",
+      "id": "Icon",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/InstallComponents.tsx",
+      "framework": "react",
+      "id": "InstallComponents",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/JupyterLogsPage.tsx",
+      "framework": "react",
+      "id": "JupyterLogsPage",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/OpenAliceBrand.tsx",
+      "framework": "react",
+      "id": "OpenAliceBrand",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/SearchBar.tsx",
+      "framework": "react",
+      "id": "SearchBar",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/ShowVersion.tsx",
+      "framework": "react",
+      "id": "ShowVersion",
+      "provenance": "unverified"
+    },
+    {
+      "capabilities": [],
+      "file": "src/components/Toast.tsx",
+      "framework": "react",
+      "id": "Toast",
+      "provenance": "unverified"
+    }
+  ],
+  "declarationFile": null,
+  "framework": "react",
+  "projectRoot": "C:\\Users\\Administrator\\orca\\openalice-data\\desktop",
+  "schema": "design-pipeline.component-inventory.v1",
+  "status": "ready"
+}

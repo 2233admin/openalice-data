@@ -8,10 +8,6 @@ services:
     image: openalice-data:0.1.0-beta.1
     ports:
       - "${OPENALICE_PORT:-6900}:6900"
-    environment:
-      OPENALICE_DATA_SOURCES: "${OPENALICE_DATA_SOURCES:-}"
-    volumes:
-      - ./data:/data:ro
     healthcheck:
       test:
         - CMD
@@ -19,8 +15,8 @@ services:
         - -c
         - >-
           import json, urllib.request;
-          data=json.load(urllib.request.urlopen('http://127.0.0.1:6900/api/v1/data/health', timeout=3));
-          assert data['status']=='ok'
+          data=json.load(urllib.request.urlopen('http://127.0.0.1:6900/api/v1/coverage/providers', timeout=3));
+          assert 'ashare' in data and 'yfinance' in data
       interval: 10s
       timeout: 5s
       retries: 12

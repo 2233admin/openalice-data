@@ -1,6 +1,6 @@
 # 设计质询与决策记录
 
-日期：2026-08-14  
+日期：2026-08-14
 变更：`openalice-desktop-brand-refresh`
 
 ## 已确认的产品事实
@@ -67,4 +67,3 @@
 | 凭证 | API keys / provider credentials |
 | 扩展 | OpenBB extensions、PyPI/Conda 包在技术视图保留原名 |
 | 由 OpenBB 提供数据能力 | 推荐 attribution 文案，不暗示 OpenAlice 自研所有数据连接器 |
-

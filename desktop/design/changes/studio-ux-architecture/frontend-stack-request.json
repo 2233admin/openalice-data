@@ -1,0 +1,26 @@
+{
+  "schema": "design-pipeline.frontend-stack-request.v1",
+  "framework": "react",
+  "brief": "OpenBB Studio functional UX reconciliation for a Chinese-first Tauri operational desktop app using the existing Tailwind and project-owned @openbb/ui-pro layer; no new UI library or animation runtime.",
+  "existing": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none"
+  },
+  "requested": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none"
+  },
+  "capabilities": [
+    "app-shell",
+    "navigation",
+    "action-center",
+    "workspace-member-table",
+    "data-table",
+    "status",
+    "form",
+    "diagnostics",
+    "recovery",
+    "accessibility",
+    "cjk-typography"
+  ]
+}

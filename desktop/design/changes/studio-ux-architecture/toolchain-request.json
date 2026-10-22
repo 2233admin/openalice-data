@@ -1,0 +1,25 @@
+{
+  "schema": "design-pipeline.toolchain-request.v1",
+  "framework": "react",
+  "brief": "Reconcile and verify the existing OpenAlice Data source-first Tauri shell and native capability-use flow using the established project stack; preserve ODP authority and add no new data, query, catalog, workspace, settings, UI-library, graphics, or motion runtime.",
+  "existing": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none",
+    "runtime": "tauri"
+  },
+  "requested": {
+    "styling": "tailwindcss",
+    "uiLibrary": "none",
+    "graphics": "none",
+    "motion": "static"
+  },
+  "capabilities": [
+    "app-shell",
+    "navigation",
+    "data-table",
+    "status",
+    "form",
+    "accessibility",
+    "cjk-typography"
+  ]
+}

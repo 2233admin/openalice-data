@@ -61,3 +61,6 @@ obb/*
 *.pkg
 *.exe
 build/conda/tmp
+
+# Local build artifacts (installers + checksums) not published to the repo
+.artifacts/

@@ -1,0 +1,65 @@
+DEBUG REPORT
+
+Scope
+- Continued existing openalice-data workspace without reverting prior OpenBB Studio changes.
+- No browser started or operated. No Provider was installed.
+
+Verified live
+- Existing openbb-api on 127.0.0.1:6900 exposed 32 coverage providers, 201 commands, and returned real yfinance data (10 rows for AAPL, 2026-08-01 onward).
+- Repository OpenBB API started on 127.0.0.1:6902 with PYTHONPATH=openbb_platform/core and OPENBB_AUTO_BUILD=false.
+- Repository endpoints returned 200 for /openapi.json, /api/v1/coverage/providers, /api/v1/coverage/commands, /api/v1/coverage/command_model, and /api/v1/coverage/provider_metadata.
+- Live repository field payload: common equity historical query fields symbol/start_date/end_date; yfinance-specific interval/extended_hours/include_actions/adjustment; common data fields date/open/high/low/close/volume/vwap; yfinance-specific split_ratio/dividend. Literal enum and required flags were present.
+- yfinance query returned 200 and 10 rows; fmp without fmp_api_key returned 400 with an explicit missing-credential detail; unknown provider returned 422.
+- Unknown query parameter mystery=foo was accepted/ignored by OpenBB with 200 and no warning. Returned provider-specific dividend remained in raw/results.
+- ProviderInterface registry discovered yfinance, fmp, us_eia, and famafranch in the installed environment. Coverage only includes command-capable providers, so registry presence and coverage presence are not identical.
+- Official Provider catalog fetch returned HTTP 200, array length 32, and openbb-yfinance entry with no credentials.
+
+Root causes
+- coverage.py serialized Pydantic FieldInfo._attributes_set directly. Real command_model requests failed with 422 Circular reference detected because non-JSON-safe objects such as AliasChoices were returned.
+- studio.rs ignored command-model provider-specific query/data fields and always emitted empty provider_specific_* maps. It also fell back to an arbitrary provider when the requested provider was absent.
+
+Fix
+- coverage.py now emits JSON-safe annotation, description, required, and Literal enum metadata; exposes the OpenBB common model under common; returns the already-safe map without recursive JSON serialization.
+- studio.rs now reads exact provider models, uses the common model when present (with intersection fallback), filters common query fields, and preserves provider-specific query/data fields. Added single-provider coverage to the regression fixture.
+
+Verification
+- desktop npm test -- --run: 29 files passed, 197 tests passed, 1 skipped.
+- Real integration: OPENBB_STUDIO_API_URL=http://127.0.0.1:6900 npm run test -- --run src/tests/integration/studio-real-provider.test.ts: 1 passed.
+- npm run build: passed.
+- npm run lint: passed.
+- Rust cargo test --bin openbb-platform with installed OpenSSL env: 129 passed.
+- Rust studio filter: 4 passed; rustfmt check passed.
+- Python coverage tests with uv/openbb-core: 4 passed; ruff check passed.
+
+Not covered
+- No actual catalog Provider installation was performed to avoid irreversible package changes. Existing route passes only the selected package to install_extensions; the Rust handler test passed, but no package install/restart cutover was exercised.
+- No native Tauri IPC invocation was exercised; Rust handler compilation/tests and the repository OpenBB HTTP service were tested separately.
+- Provider statuses not_installed, installed-but-not-applied, and failed are not represented end-to-end in the live snapshot. Catalog filtering handles not-installed packages; coverage reports discovered command providers only. Query failures are recorded in Studio activity while the snapshot provider status remains runtime coverage/credential state.
+- Unknown query fields are currently passed through and may be silently ignored by OpenBB; no allow-list warning or mapping diagnostic exists.
+
+E2E follow-up
+- Previous UI attempt did not install a Provider or execute through native Tauri IPC. This session used Orca computer-use against the running Tauri desktop window.
+- Frontend `/data-sources/add` loaded the official catalog and displayed `当前目录没有可添加的数据源`; native Extensions → Data Providers displayed `No extensions available in this category` because all official catalog Providers were already installed. No package was installed or removed.
+- Frontend `/data-sources` showed yfinance as `可用` with `无需凭证`; its Test link opened `/query?provider=yfinance`.
+- First frontend query reached the form but failed before HTTP because the managed OpenBB API backend had status `running` without a URL in `backends.json`; the query page treated missing `service.backend.url` as `service_runtime`.
+- Minimal fix: `desktop/src-tauri/src/tauri_handlers/backends.rs` now infers `http://<host>:<port>` from configured command flags for listed and newly started backends. `desktop/src/routes/playground.tsx` now requires both a running service and a backend URL before issuing HTTP. Added two Rust and one Playground regression tests.
+- After rebuilding/restarting Tauri, the frontend started the managed OpenBB API through Backends → Start, reopened the persisted yfinance query, submitted `AAPL`, `2026-08-01` to `2026-08-14`, and rendered real rows. Evidence: columns date/open/high/low/close/volume/dividend and first row `2026-08-03, 309.5799865722656, 311.79998779296875, 302.55999755859375, 303.4200134277344, 75052000, 0`.
+- Focused Rust endpoint tests passed; post-fix `cargo test --bin openbb-platform` passed 131 tests, `npm test -- --run` passed 198 tests across 29 files with 1 skipped file/test, `npm run build` passed, `npm run lint` passed, and rustfmt check passed.
+
+WSL follow-up
+- Arch WSL2 uses Python 3.14.6. A persistent disposable environment was created at `/home/dev/openalice-work/openbb-ecb`; no repository files or Windows Desktop environment were modified.
+- Installed real package `openbb-ecb==1.6.1` with OpenBB `4.7.2`. Repository declares `4.7.3`, but that version is not published on PyPI; `4.7.2` was the latest available package for this isolated verification.
+- Direct OpenBB discovery reported Provider `ecb` with routes `.currency.reference_rates`, `.economy.balance_of_payments`, and `.fixedincome.government.yield_curve`.
+- Direct Python SDK query `obb.currency.reference_rates(provider="ecb")` reached the ECB source without the Desktop OpenBB API and returned live data dated `2026-08-14`, including `EUR=1.0`, `USD=1.1567`, `JPY=183.93`, and 31 currency fields.
+- Credential behavior was also real: `obb.equity.price.quote(symbol="AAPL", provider="fmp")` failed before HTTP with `Missing credential 'fmp_api_key'`.
+- WSL Provider installation does not alter the Windows managed Conda environment or the Desktop catalog. Desktop integration still requires installing into the Windows managed environment, or implementing explicit WSL backend/environment support.
+
+Post-push fixes (commit 07ab76389)
+- `inspect_studio_environment` now receives the selected Backend URL and Rust inspection uses it for OpenAPI, coverage, command-model, and provider-metadata requests. Regression test `prefers_configured_backend_url_for_inspection` passes.
+- Replaced internal Studio `<a href>` navigation with `StudioLink`, which preserves `href` but routes through TanStack Router; fixed workspace detail links to use concrete IDs. Added `StudioLink` and workspace route tests.
+- Service start now polls OpenAPI and provider coverage readiness with a bounded timeout before refetching Studio state.
+- Managed YAML no longer requires external Git: root, patched `openbb-core`, and A-share install from GitHub archive URLs with `#subdirectory`; Docker installs local patched core before the root package.
+- Provider metadata reads credentials from disk per request, so Desktop credential saves are reflected without API restart.
+- Local verification after fixes: desktop 30 files passed, 202 tests passed, 1 skipped; desktop build and lint passed; Rust 132 tests passed and rustfmt passed; Python coverage tests 4 passed.
+- GitHub Actions run `31895273416` passed all three Python contract jobs and Compose image verification, including real OpenBB readiness/data checks.
+- Docker build could not run locally because Docker Desktop Linux daemon was unavailable; CI built and exercised the image successfully.

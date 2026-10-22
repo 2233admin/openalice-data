@@ -21,7 +21,14 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - name: Run OpenAlice Data contracts
+      - name: Run OpenBB fork and A-share Provider contracts
+        run: >-
+          uv run --python ${{ matrix.python-version }}
+          --with-editable openbb_platform/core
+          --with-editable openbb_platform/providers/ashare
+          --with pytest --with pytest-asyncio
+          python -m pytest openbb_platform/providers/ashare/tests -q
+      - name: Run optional Data Hub contracts
         run: >-
           uv run --python ${{ matrix.python-version }}
           --with-editable openbb_platform/core
@@ -37,11 +44,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Compose
         run: docker compose config -q
-      - name: Build Beta image
+      - name: Build complete OpenBB image
         run: docker compose build
-      - name: Start Beta service
+      - name: Start OpenAlice service
         run: docker compose up -d
-      - name: Verify dashboard, readiness, and real OpenBB data
+      - name: Verify Provider coverage, readiness, and real OpenBB data
         run: python scripts/verify_openalice_beta.py
       - name: Show service logs on failure
         if: failure()

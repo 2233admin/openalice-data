@@ -2,7 +2,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import { Route } from '../../routes/__root';
-import { RouterProvider, createRouter, useRouter } from '@tanstack/react-router';
+import { RouterProvider, createRouter, useRouter, useLocation } from '@tanstack/react-router';
 import { EnvironmentCreationProvider } from '../../contexts/EnvironmentCreationContext';
 
 beforeAll(() => {
@@ -27,6 +27,7 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     useRouter: vi.fn(),
+    useLocation: vi.fn(),
     useMatch: vi.fn(() => ({ pathname: '/' })),
   };
 });
@@ -37,11 +38,12 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 describe('Root Route', () => {
-  const createTestRouter = (initialPath = '/') => {
-    (useRouter as ReturnType<typeof vi.fn>).mockReturnValue({
+  const createTestRouter = (initialPath = '/', searchStr = '') => {
+    vi.mocked(useRouter).mockReturnValue({
       state: { location: { pathname: initialPath } },
       navigate: vi.fn(),
-    });
+    } as never);
+    vi.mocked(useLocation).mockReturnValue({ pathname: initialPath, searchStr } as never);
 
     const router = createRouter({
       routeTree: Route,
@@ -53,11 +55,12 @@ describe('Root Route', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset useRouter mock to its default for each test
-    (useRouter as ReturnType<typeof vi.fn>).mockReturnValue({
+    // Reset router mocks to their defaults for each test
+    vi.mocked(useRouter).mockReturnValue({
       state: { location: { pathname: '/' } },
       navigate: vi.fn(),
-    });
+    } as never);
+    vi.mocked(useLocation).mockReturnValue({ pathname: '/' } as never);
   });
 
   test('renders Root component without crashing', async () => {
@@ -73,8 +76,8 @@ describe('Root Route', () => {
     expect(screen.getByText(/Powered by OpenBB/i)).toBeInTheDocument();
   });
 
-  test('displays Studio navigation and demotes infrastructure pages', async () => {
-    const router = createTestRouter('/'); // Explicitly set path
+  test('exposes only the three normal user intents', async () => {
+    const router = createTestRouter('/home');
     await act(async () => {
       render(
         <EnvironmentCreationProvider>
@@ -82,13 +85,20 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    for (const label of ['首页', '服务', '运行环境', 'API 凭证', '数据源', '数据目录', '查询', '扩展', '高级设置']) {
-      expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
+
+    const navigation = screen.getByRole('navigation', { name: '主导航' });
+    const links = Array.from(navigation.querySelectorAll('a'));
+    expect(links.map((link) => link.textContent)).toEqual(['首页', '数据源', '环境与扩展']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/home', '/data-sources', '/environment-extensions']);
+    expect(screen.getByRole('link', { name: '首页' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('group', { name: 'ODP' })).not.toBeInTheDocument();
+    for (const legacyLabel of ['查询', '维护', '工作区', '数据目录', 'Backends', 'Environments', 'Extensions', 'Logs']) {
+      expect(screen.queryByRole('link', { name: legacyLabel })).not.toBeInTheDocument();
     }
   });
 
-  test('hides navigation links in Jupyter logs view', async () => {
-    const router = createTestRouter('/jupyter-logs'); // Explicitly set path
+  test('keeps legacy infrastructure deep links reachable without routine tabs', async () => {
+    const router = createTestRouter('/backends');
     await act(async () => {
       render(
         <EnvironmentCreationProvider>
@@ -96,11 +106,14 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '环境与扩展' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('link', { name: 'Backends' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '高级设置' })).not.toBeInTheDocument();
   });
 
-  test('hides navigation links in Backend logs view', async () => {
-    const router = createTestRouter('/backend-logs'); // Explicitly set path
+  test('maps legacy logs deep links to the combined environment surface', async () => {
+    const router = createTestRouter('/backend-logs');
     await act(async () => {
       render(
         <EnvironmentCreationProvider>
@@ -108,7 +121,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '环境与扩展' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('hides navigation links in Setup view', async () => {
@@ -120,7 +133,7 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
   });
 
   test('hides navigation links in Installation Progress view', async () => {
@@ -132,6 +145,6 @@ describe('Root Route', () => {
         </EnvironmentCreationProvider>
       );
     });
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
   });
 });

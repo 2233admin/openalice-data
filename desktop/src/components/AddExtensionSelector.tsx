@@ -22,28 +22,28 @@ interface ExtensionCategory {
 const categories: ExtensionCategory[] = [
   {
     id: "conda",
-    name: "Conda Packages",
-    description: "Specify Conda packages to install in the environment, optionally with a channel (e.g., conda-forge, <channel-name>) and version specifiers.",
+    name: "Conda 包",
+    description: "选择要安装到当前环境的 Conda 包。",
   },
   {
     id: "extras",
-    name: "PyPI Packages",
-    description: "Packages from PyPI to be installed (pip) in the environment. Use version specifiers as needed (e.g., package==1.2.3 or package>=1.2.3).",
+    name: "Python 包",
+    description: "输入要安装到当前环境的 Python 包及版本。",
   },
   {
     id: "provider",
-    name: "Data Providers",
-    description: "Data providers supplying data through the OpenBB provider interface.",
+    name: "数据源扩展",
+    description: "由 ODP 安装器提供的数据源扩展。",
   },
   {
     id: "router",
-    name: "Routers",
-    description: "API paths and endpoints implementing the OpenBB command interface.",
+    name: "路由扩展",
+    description: "由 ODP 安装器提供的路由扩展。",
   },
   {
     id: "other-openbb",
-    name: "Others",
-    description: "Additional OpenBB extensions, including OBBject extensions, that enhance the functionality of the OpenBB platform.",
+    name: "其他 OpenBB 扩展",
+    description: "其他 OpenBB 扩展安装单元。",
   },
 ];
 
@@ -121,15 +121,18 @@ export const AddExtensionSelector = ({
   onInstallExtensions,
   installedPackages = new Set(),
   onCancel,
+  excludeCategories = [],
 }: {
-  onInstallExtensions: (extensionIds: string[]) => void;
+  onInstallExtensions: (extensionIds: string[]) => void | Promise<void>;
   installedPackages?: Set<string>;
   onCancel?: () => void;
+  excludeCategories?: string[];
 }) => {
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeCategoryTab, setActiveCategoryTab] = useState(categories[0].id);
+  const availableCategories = categories.filter((category) => !excludeCategories.includes(category.id));
+  const [activeCategoryTab, setActiveCategoryTab] = useState(availableCategories[0]?.id ?? categories[0].id);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
 
   // Track selected extensions - start with an empty array for no pre-selection
@@ -406,8 +409,9 @@ export const AddExtensionSelector = ({
 
       console.log("Installing extensions:", extensionsToInstall);
 
-      // Call installation and wait for completion
-      onInstallExtensions(extensionsToInstall);
+      // Await the owner callback so its service restart and rediscovery state
+      // remains visible while this selector is in its installing state.
+      await onInstallExtensions(extensionsToInstall);
 
       console.log("Extension installation completed successfully");
     } catch (error) {
@@ -419,28 +423,26 @@ export const AddExtensionSelector = ({
     }
   };
 
-	const getCheckboxState = (categoryId: string) => {
-		const categoryExtensions = getExtensionsByCategory(categoryId);
-		const totalCount = categoryExtensions.length;
-		const selectedCount = countSelectedInCategory(categoryId);
+  const getCheckboxState = (categoryId: string) => {
+    const categoryExtensions = getExtensionsByCategory(categoryId);
+    const totalCount = categoryExtensions.length;
+    const selectedCount = countSelectedInCategory(categoryId);
 
-    if (selectedCount === 0) return 'unchecked';
-    if (selectedCount === totalCount) return 'checked';
-    return 'indeterminate';
-	};
+    if (selectedCount === 0) return "unchecked";
+    if (selectedCount === totalCount) return "checked";
+    return "indeterminate";
+  };
 
-  // Update the useEffect to use the new hasMatchingExtensions
   useEffect(() => {
-    // If current active tab has no matches, switch to first available tab
-    if (!hasMatchingExtensions(extensions, activeCategoryTab, localSearchQuery, installedPackages)) {
-      const firstMatchingCategory = categories.find(category =>
+    // If current active tab has no matches, switch to the first visible category.
+    if (!availableCategories.some((category) => category.id === activeCategoryTab)
+      || !hasMatchingExtensions(extensions, activeCategoryTab, localSearchQuery, installedPackages)) {
+      const firstMatchingCategory = availableCategories.find((category) =>
         hasMatchingExtensions(extensions, category.id, localSearchQuery, installedPackages)
       );
-      if (firstMatchingCategory) {
-        setActiveCategoryTab(firstMatchingCategory.id);
-      }
+      if (firstMatchingCategory) setActiveCategoryTab(firstMatchingCategory.id);
     }
-  }, [localSearchQuery, activeCategoryTab, extensions, installedPackages]);
+  }, [activeCategoryTab, availableCategories, extensions, installedPackages, localSearchQuery]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center px-5">
@@ -470,14 +472,14 @@ export const AddExtensionSelector = ({
             </div>
             {/* Tab bar for categories */}
             <div className="flex gap-4 whitespace-nowrap mb-5 border-b-2 border-theme-accent">
-              {categories
-                .filter(category => hasMatchingExtensions(extensions, category.id, localSearchQuery, installedPackages))
+              {availableCategories
+                .filter((category) => hasMatchingExtensions(extensions, category.id, localSearchQuery, installedPackages))
                 .map((category, idx) => (
                   <div key={category.id} className="flex items-center">
                     <button
                       type="button"
                       className={`py-1 text-theme transition-colors
-                        ${idx === 0 ? 'pl-0' : 'px-0'}
+                        ${idx === 0 ? "pl-0" : "px-0"}
                         ${activeCategoryTab === category.id
                           ? "body-sm-bold border-b tab-border-active text-theme-accent relative -bottom-0.5"
                           : "body-sm-medium text-theme-muted relative -bottom-0.5 "}
@@ -496,7 +498,7 @@ export const AddExtensionSelector = ({
             {/* Category description and select/clear all button */}
             <div className="mb-5 flex justify-between items-center">
               <p className="body-sm-regular text-theme-secondary w-full">
-                {categories.find(c => c.id === activeCategoryTab)?.description}
+                {availableCategories.find((category) => category.id === activeCategoryTab)?.description}
               </p>
             </div>
 
@@ -523,7 +525,7 @@ export const AddExtensionSelector = ({
 
             {/* Only show the active tab's category content */}
             <div className="mb-3">
-              {categories.map((category) => {
+              {availableCategories.map((category) => {
                 if (category.id !== activeCategoryTab) return null;
 
                 const categoryExtensions = getFilteredExtensions(category.id);

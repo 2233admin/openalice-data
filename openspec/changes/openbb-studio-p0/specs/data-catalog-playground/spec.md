@@ -57,4 +57,3 @@ The test suite SHALL cover at least one installed Provider through discovery, op
 #### Scenario: P0 core flow runs in verification environment
 - **WHEN** the configured provider and managed API service are available
 - **THEN** the automated flow completes without terminal interaction and verifies real returned rows
-

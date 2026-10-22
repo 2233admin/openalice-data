@@ -1,0 +1,30 @@
+{
+  "blockers": [],
+  "brief": "OpenAlice Data shell: Home, unified native/composed Data Sources, first-level Extensions, ODP navigation, CJK accessibility",
+  "capabilities": [
+    "aria.control-semantics",
+    "data.grid",
+    "focus.management",
+    "keyboard.navigation",
+    "state.empty",
+    "state.error",
+    "state.loading"
+  ],
+  "components": [
+    "data-grid"
+  ],
+  "registryHash": "71fe3a1b807de5359554c0b46fe8dff4848c98d1d2ec123c5647b996f3d15017",
+  "requiredChecks": [
+    "aria-semantics",
+    "empty-state",
+    "error-state",
+    "focus-order",
+    "focus-restoration",
+    "grid-semantics",
+    "keyboard-navigation",
+    "loading-state",
+    "row-column-navigation"
+  ],
+  "schema": "design-pipeline.component-capability.v1",
+  "status": "ready"
+}

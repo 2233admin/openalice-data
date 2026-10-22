@@ -1,0 +1,101 @@
+{
+  "blockers": [],
+  "changeId": "studio-ux-architecture",
+  "evidence": [
+    "design/changes/studio-ux-architecture/qa.md",
+    "design/changes/studio-ux-architecture/toolchain-plan.json"
+  ],
+  "extensions": {
+    "legacy": {
+      "artifactRoot": "design/changes/studio-ux-architecture",
+      "capabilities": {
+        "fallbacks": [],
+        "missing": []
+      },
+      "decisions": [
+        "Treat reference sites and DESIGN.md templates as attributed evidence, not product authority"
+      ],
+      "designSynthesis": {
+        "manifest": "design/changes/studio-ux-architecture/design-synthesis.json",
+        "output": "DESIGN.md",
+        "stage": "implementation",
+        "status": "ready-to-implement"
+      },
+      "gbrain": {
+        "detected": false,
+        "paths": [],
+        "syncPlanned": false
+      },
+      "motion": {
+        "implementationLibrary": "unknown",
+        "motionSpec": "design/changes/studio-ux-architecture/motion.md",
+        "reducedMotion": "pending",
+        "required": false
+      },
+      "openSpec": {
+        "changeId": "studio-ux-architecture",
+        "detected": false,
+        "paths": [
+          "design/changes/studio-ux-architecture"
+        ]
+      },
+      "projectRoot": ".",
+      "qa": {
+        "evidenceRoot": "design/changes/studio-ux-architecture/qa.md",
+        "scores": {},
+        "status": "not-run"
+      },
+      "surfaces": [
+        "DESIGN.md"
+      ]
+    },
+    "legacyEvents": {
+      "count": 5,
+      "sha256": "91b0cedcaecaac565c36550fc9da329cdf60bf0b76be3185e2c3b8772623374b"
+    },
+    "legacyStatus": "in-progress",
+    "unknown": {
+      "motionFoundation": {
+        "path": "MOTION.md",
+        "posture": "static",
+        "primitiveRegistry": "design-pipeline.motion-primitives.v1",
+        "selectedPrimitives": [],
+        "sha256": "0cfca3c3f67be1d102300ec1637089a10ec9cc07d812dd0c86446075686fd490",
+        "status": "ready"
+      }
+    }
+  },
+  "foundations": {
+    "design": {
+      "path": "DESIGN.md",
+      "sha256": "5ea2506ab172a1cef5ffa8048e7780631b32770c67510b139caaeda43763ba14",
+      "status": "ready",
+      "validator": "designer-pipeline foundation check --kind design"
+    },
+    "motion": {
+      "path": "MOTION.md",
+      "sha256": "0cfca3c3f67be1d102300ec1637089a10ec9cc07d812dd0c86446075686fd490",
+      "status": "ready",
+      "validator": "designer-pipeline foundation check --kind motion"
+    }
+  },
+  "lastEventSeq": 5,
+  "migration": {
+    "sourceNextField": "nextActions",
+    "sourcePhaseField": "phase",
+    "sourceSchema": "design-pipeline.state.v1",
+    "sourceSha256": "a01dc4bfe8b4157a9c4c00f3ca585e205b7706183ed96d86199ab9e5b7786d72",
+    "sourceStatus": "in-progress"
+  },
+  "nextActions": [
+    "Implement GitHub ticket #11 for composed-source routing and persistence.",
+    "Keep #12 recovery/Extensions handoff and #13 legacy cleanup separate."
+  ],
+  "phase": "release-readiness",
+  "registryVersion": "design-pipeline.phases.v2",
+  "revision": 5,
+  "sceneRuntime": null,
+  "schema": "design-pipeline.state.v2",
+  "status": "ready",
+  "updatedAt": "2026-08-16T06:07:19.000Z"
+}

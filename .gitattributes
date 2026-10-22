@@ -1,3 +1,5 @@
 * linguist-vendored
 *.py linguist-vendored=false
 text eol=lf
+# Generated router file: pin LF so autocrlf on Windows stops producing noise diffs
+desktop/src/routeTree.gen.ts text eol=lf

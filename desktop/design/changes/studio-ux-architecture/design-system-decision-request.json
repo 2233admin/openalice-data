@@ -1,0 +1,16 @@
+{
+  "schema": "design-pipeline.design-system-decision-request.v1",
+  "version": "1",
+  "mode": "custom",
+  "project": {
+    "designMd": "DESIGN.md",
+    "framework": "react",
+    "runtime": {
+      "react": "project",
+      "reactDom": "project"
+    }
+  },
+  "frontendStackDecisionPath": "design/changes/studio-ux-architecture/frontend-stack-decision.json",
+  "capabilityInventoryPath": "design/changes/studio-ux-architecture/capability-inventory.json",
+  "customId": "openalice-studio-project-ui"
+}

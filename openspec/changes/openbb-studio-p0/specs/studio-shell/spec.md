@@ -1,4 +1,6 @@
 ## Purpose
+Status: SUPERSEDED. Historical shell acceptance only; active Home/Query/Advanced requirements are in `desktop/design/changes/studio-ux-architecture/requirements.md`.
+
 
 Provides a user-facing Desktop shell that leads with data-source actions while preserving all original ODP operational controls for advanced use.
 
@@ -39,4 +41,3 @@ Extensions SHALL show installed package name, type, version, status, capabilitie
 #### Scenario: Runtime contains provider packages
 - **WHEN** the active runtime reports installed OpenBB provider packages
 - **THEN** Extensions shows them and links management actions to the existing runtime installer
-
